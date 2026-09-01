@@ -738,6 +738,24 @@ input[type=range]::-moz-range-thumb{width:20px;height:20px;border-radius:50%;bac
   text-shadow:0 0 8px rgba(255,195,55,.95),0 2px 5px rgba(0,0,0,.85);
 }
 
+
+/* ==================== v14 移动端顶部安全距离（刘海/状态栏适配） ==================== */
+/* 大厅顶部（LOGO/图标/跑马灯）避开刘海与浏览器顶栏 */
+#screen-home .home-top{padding-top:calc(10px + env(safe-area-inset-top, 0px))}
+/* 登录页顶部（LOGO + 客服/修复圆钮） */
+#screen-login .login-top{top:calc(14px + env(safe-area-inset-top, 0px))}
+/* 绑定页顶部（返回 + 标题 + 喜报横幅） */
+#screen-bind .bind-header{padding-top:calc(14px + env(safe-area-inset-top, 0px))}
+/* 加载页底部安全区 */
+#screen-loading .loading-content{padding-bottom:calc(22px + env(safe-area-inset-bottom, 0px))}
+/* 老版本 iOS 兼容 */
+@supports (padding-top: constant(safe-area-inset-top)) {
+  #screen-home .home-top{padding-top:calc(10px + constant(safe-area-inset-top))}
+  #screen-login .login-top{top:calc(14px + constant(safe-area-inset-top))}
+  #screen-bind .bind-header{padding-top:calc(14px + constant(safe-area-inset-top))}
+  #screen-loading .loading-content{padding-bottom:calc(22px + constant(safe-area-inset-bottom))}
+}
+
 </style>
 </head>
 <body>
