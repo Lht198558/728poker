@@ -1266,9 +1266,17 @@ document.addEventListener('pointerdown', e => {
 function fit() {
   const g0 = $('#game'); if (g0 && g0.scrollTop) g0.scrollTop = 0; if (g0 && g0.scrollLeft) g0.scrollLeft = 0;
   const w = innerWidth, h = innerHeight;
-  const scale = Math.min(w / 390, h / 844);
+  const phone = matchMedia('(pointer: coarse)').matches && w <= h && w < 500;
+  let scale, ty;
+  if (phone) {
+    scale = Math.max(w / 390, h / 844);   // 手机竖屏：铺满整屏（cover），左右无黑边
+    ty = (h - 844 * scale) / 2;            // 垂直居中（顶部靠安全距离保护内容）
+  } else {
+    scale = Math.min(w / 390, h / 844);   // PC/横屏/平板：完整显示居中
+    ty = (h - 844 * scale) / 2;
+  }
   const g = $('#game');
-  g.style.transform = `translate(${(w - 390 * scale) / 2}px, ${(h - 844 * scale) / 2}px) scale(${scale})`;
+  g.style.transform = `translate(${(w - 390 * scale) / 2}px, ${ty}px) scale(${scale})`;
   g.style.transformOrigin = '0 0';
 }
 addEventListener('resize', fit);
