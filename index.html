@@ -1,0 +1,1560 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<title>728游戏 POKER GAME</title>
+<style>
+/* ==================== 基础 ==================== */
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;overflow:hidden;background:#02000a;font-family:'Segoe UI','PingFang SC','Microsoft YaHei',system-ui,sans-serif;user-select:none;-webkit-user-select:none}
+button{font-family:inherit;border:none;background:none;color:inherit;cursor:pointer}
+input,select{font-family:inherit;outline:none}
+#stage{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;overflow:hidden;
+  background:radial-gradient(1200px 700px at 80% -10%,rgba(168,85,247,.16),transparent 60%),radial-gradient(900px 600px at 10% 110%,rgba(255,45,149,.12),transparent 60%),#02000a}
+#game{position:absolute;left:0;top:0;width:390px;height:844px;background:#060014;overflow:hidden;
+  box-shadow:0 0 0 1px rgba(255,255,255,.07),0 0 90px rgba(168,85,247,.45),0 30px 80px rgba(0,0,0,.7);border-radius:36px;
+  color:var(--text);transition:background .8s ease}
+@media (max-width:520px){#game{border-radius:0;box-shadow:none}}
+:root{
+  --text:#ffffff;--text-dim:#d9c9ff;--text-soft:rgba(255,255,255,.55);
+  --pink:#ff2d95;--purple:#a855f7;--cyan:#3ee6ff;--gold:#ffd24a;--gold2:#ff8a00;--green:#3ef0b0;
+  --glass:rgba(255,255,255,.09);
+  --glass-strong:rgba(24,10,52,.78);
+  --glass-border:rgba(255,255,255,.22);
+  --glass-hi:rgba(255,255,255,.14);
+  --input-bg:rgba(255,255,255,.07);
+  --input-border:rgba(255,255,255,.22);
+  --input-text:#fff;
+  --shadow-soft:0 10px 40px rgba(0,0,0,.5);
+  --gold-grad:linear-gradient(135deg,#fff3b0 0%,#ffd24a 38%,#ff9f1c 72%,#ff7a00 100%);
+  --purple-grad:linear-gradient(135deg,#e4c5ff 0%,#c084fc 35%,#a855f7 70%,#7c3aed 100%);
+  --cyan-grad:linear-gradient(135deg,#b6f7ff 0%,#5eead4 35%,#22d3ee 70%,#0891b2 100%);
+}
+#game.theme-day{
+  --text:#2a1b4e;--text-dim:#6b5b95;--text-soft:rgba(60,40,110,.62);
+  --glass:rgba(255,255,255,.5);--glass-strong:rgba(255,255,255,.86);--glass-border:rgba(120,90,200,.32);--glass-hi:rgba(255,255,255,.75);
+  --input-bg:rgba(255,255,255,.78);--input-border:rgba(120,90,200,.35);--input-text:#2a1b4e;
+  --shadow-soft:0 10px 40px rgba(90,60,160,.22);
+  background:#f2eeff;
+}
+
+/* ==================== 实时场景画布 ==================== */
+
+
+/* ==================== 屏幕转场（Spring 弹性） ==================== */
+.screen{position:absolute;inset:0;display:flex;flex-direction:column;opacity:0;visibility:hidden;
+  transform:scale(1.06) translateY(14px);filter:blur(10px);
+  transition:opacity .5s ease,transform .55s cubic-bezier(.22,1.2,.36,1),visibility .5s,filter .5s ease}
+.screen.active{opacity:1;visibility:visible;transform:scale(1) translateY(0);filter:blur(0)}
+.screen-enter{animation:screenEnter .75s cubic-bezier(.16,1.3,.3,1) both}
+@keyframes screenEnter{0%{opacity:0;transform:scale(.9) translateY(24px);filter:blur(14px)}100%{opacity:1;transform:scale(1) translateY(0);filter:blur(0)}}
+
+/* ==================== 玻璃按钮 ==================== */
+.btn{position:relative;display:flex;align-items:center;justify-content:center;gap:8px;font-weight:800;border-radius:999px;overflow:hidden;
+  transition:transform .18s cubic-bezier(.34,1.56,.64,1),box-shadow .3s ease,filter .3s ease}
+.btn:active{transform:scale(.94)}
+.btn-gold{background:var(--gold-grad);color:#5b2200;
+  box-shadow:0 6px 24px rgba(255,170,40,.55),0 2px 6px rgba(0,0,0,.3),inset 0 1px 0 rgba(255,255,255,.85),inset 0 -2px 6px rgba(180,80,0,.35);
+  text-shadow:0 1px 0 rgba(255,255,255,.55)}
+.btn-gold:hover{box-shadow:0 10px 34px rgba(255,170,40,.8),0 4px 10px rgba(0,0,0,.35),inset 0 1px 0 rgba(255,255,255,.9),inset 0 -2px 6px rgba(180,80,0,.35);transform:translateY(-2px)}
+.btn-purple{background:var(--purple-grad);color:#fff;
+  box-shadow:0 6px 24px rgba(168,85,247,.55),0 2px 6px rgba(0,0,0,.3),inset 0 1px 0 rgba(255,255,255,.5),inset 0 -2px 8px rgba(60,20,140,.5)}
+.btn-purple:hover{box-shadow:0 10px 34px rgba(168,85,247,.85),0 4px 10px rgba(0,0,0,.35),inset 0 1px 0 rgba(255,255,255,.55),inset 0 -2px 8px rgba(60,20,140,.5);transform:translateY(-2px)}
+.btn-cyan{background:var(--cyan-grad);color:#043047;
+  box-shadow:0 6px 24px rgba(34,211,238,.5),0 2px 6px rgba(0,0,0,.3),inset 0 1px 0 rgba(255,255,255,.75)}
+.btn-cyan:hover{box-shadow:0 10px 34px rgba(34,211,238,.8),0 4px 10px rgba(0,0,0,.35);transform:translateY(-2px)}
+.btn-ghost{background:linear-gradient(160deg,rgba(255,255,255,.14),rgba(255,255,255,.05));color:var(--text);
+  border:1px solid rgba(255,255,255,.28);backdrop-filter:blur(12px) saturate(160%);
+  box-shadow:0 4px 18px rgba(0,0,0,.35),inset 0 1px 0 rgba(255,255,255,.22)}
+.btn-ghost:hover{background:linear-gradient(160deg,rgba(255,255,255,.22),rgba(255,255,255,.1));border-color:rgba(255,255,255,.45);transform:translateY(-2px)}
+#game.theme-day .btn-ghost{background:linear-gradient(160deg,rgba(140,110,220,.16),rgba(140,110,220,.06));border-color:rgba(120,90,200,.35)}
+.btn-lg{width:100%;height:54px;font-size:17px;letter-spacing:3px}
+.btn-sm{height:34px;padding:0 16px;font-size:13px}
+.btn::after{content:'';position:absolute;top:0;left:0;width:50%;height:100%;
+  background:linear-gradient(100deg,transparent,rgba(255,255,255,.55),transparent);transform:translateX(-120%) skewX(-20deg);
+  animation:btnShine 3.2s ease-in-out infinite;opacity:0}
+.btn:hover::after{opacity:1;animation:btnShine 1.4s ease-in-out infinite}
+@keyframes btnShine{0%,60%{transform:translateX(-120%) skewX(-20deg)}100%{transform:translateX(240%) skewX(-20deg)}}
+.ripple{position:absolute;border-radius:50%;pointer-events:none;background:radial-gradient(circle,rgba(255,255,255,.55),rgba(255,255,255,0) 65%);
+  transform:scale(0);animation:rippleAnim .6s cubic-bezier(.2,.6,.4,1) forwards}
+@keyframes rippleAnim{to{transform:scale(3.2);opacity:0}}
+/* ==================== 加载页 ==================== */
+#screen-loading{justify-content:flex-end}
+.loading-content{position:relative;z-index:5;padding:0 30px 44px;display:flex;flex-direction:column;gap:14px}
+.mini-logo{display:flex;align-items:baseline;justify-content:center;gap:7px;font-weight:900;letter-spacing:2px}
+.mini-logo b{font-size:36px;background:linear-gradient(120deg,#fff,#ffd24a,#ff8a00,#ffd24a,#fff);background-size:300% 100%;
+  -webkit-background-clip:text;background-clip:text;color:transparent;animation:gradSlide 4s linear infinite;filter:drop-shadow(0 0 16px rgba(255,180,50,.65))}
+.mini-logo span{font-size:13px;color:var(--text-dim);letter-spacing:6px;text-shadow:0 0 12px rgba(168,85,247,.8)}
+@keyframes gradSlide{0%{background-position:0% 0}100%{background-position:300% 0}}
+.loading-title{font-size:14px;color:var(--text-dim);letter-spacing:4px;text-align:center;text-shadow:0 0 16px rgba(168,85,247,.7)}
+.progress-wrap{background:linear-gradient(160deg,rgba(255,255,255,.14),rgba(255,255,255,.04));border:1px solid rgba(255,255,255,.22);
+  border-radius:22px;padding:18px 20px;backdrop-filter:blur(24px) saturate(170%);box-shadow:0 12px 40px rgba(0,0,0,.5),inset 0 1px 0 rgba(255,255,255,.25)}
+#game.theme-day .progress-wrap{background:linear-gradient(160deg,rgba(255,255,255,.7),rgba(240,233,255,.4))}
+.progress-bar{height:16px;border-radius:999px;background:rgba(0,0,0,.45);overflow:hidden;border:1px solid rgba(255,255,255,.16);box-shadow:inset 0 2px 6px rgba(0,0,0,.6)}
+.progress-fill{height:100%;width:0%;border-radius:999px;position:relative;
+  background:linear-gradient(90deg,#3ee6ff,#a855f7 45%,#ff2d95 80%,#ffd24a);background-size:200% 100%;
+  animation:gradSlide 2s linear infinite;box-shadow:0 0 18px rgba(168,85,247,.95),0 0 40px rgba(255,45,149,.6);transition:width .18s linear}
+.progress-fill::after{content:'';position:absolute;inset:0;background:linear-gradient(90deg,transparent,rgba(255,255,255,.65),transparent);animation:shine 1.1s linear infinite}
+@keyframes shine{0%{transform:translateX(-100%)}100%{transform:translateX(220%)}}
+.progress-meta{display:flex;justify-content:space-between;align-items:center;margin-top:11px;font-size:12px;color:var(--text-dim)}
+.progress-meta .pct{font-weight:900;font-size:16px;background:linear-gradient(120deg,#fff,#ffd24a);-webkit-background-clip:text;background-clip:text;color:transparent;filter:drop-shadow(0 0 10px rgba(255,210,74,.6))}
+
+/* ==================== 登录选择页 ==================== */
+.login-top{position:relative;z-index:6;display:flex;justify-content:flex-end;gap:10px;padding:14px 14px 0}
+.float-btn{display:flex;align-items:center;gap:5px;padding:9px 14px;border-radius:999px;font-size:12px;font-weight:800;color:#fff;
+  background:linear-gradient(135deg,rgba(255,45,149,.92),rgba(168,85,247,.92));border:1px solid rgba(255,255,255,.3);
+  backdrop-filter:blur(14px);box-shadow:0 8px 22px rgba(255,45,149,.55),inset 0 1px 0 rgba(255,255,255,.45);
+  animation:floaty 3s ease-in-out infinite;transition:transform .15s}
+.float-btn:active{transform:scale(.92)}
+.float-btn.repair{background:linear-gradient(135deg,rgba(34,211,238,.92),rgba(59,130,246,.92));box-shadow:0 8px 22px rgba(34,211,238,.5),inset 0 1px 0 rgba(255,255,255,.45);animation-delay:1s}
+@keyframes floaty{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
+.login-mid{position:relative;z-index:5;flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:28px;padding:0 26px}
+.logo-box{text-align:center;position:relative}
+.logo-glow{position:absolute;left:50%;top:50%;width:280px;height:280px;transform:translate(-50%,-50%);
+  background:radial-gradient(circle,rgba(255,45,149,.42),rgba(168,85,247,.22) 45%,transparent 70%);filter:blur(10px);
+  animation:breath 2.8s ease-in-out infinite}
+@keyframes breath{0%,100%{transform:translate(-50%,-50%) scale(1);opacity:.8}50%{transform:translate(-50%,-50%) scale(1.14);opacity:1}}
+.logo-icon{position:relative;display:flex;justify-content:center;gap:16px;font-size:42px;margin-bottom:6px}
+.logo-icon i{font-style:normal;filter:drop-shadow(0 0 14px rgba(255,45,149,1));animation:suitFloat 2.6s ease-in-out infinite}
+.logo-icon i:nth-child(2){animation-delay:.2s}.logo-icon i:nth-child(3){animation-delay:.4s}.logo-icon i:nth-child(4){animation-delay:.6s}
+@keyframes suitFloat{0%,100%{transform:translateY(0) rotate(0)}50%{transform:translateY(-7px) rotate(6deg)}}
+.logo-title{position:relative;font-size:64px;font-weight:900;letter-spacing:5px;line-height:1;font-style:italic;
+  background:linear-gradient(120deg,#fff 10%,#ffe27a 30%,#ff9f1c 50%,#ffd24a 70%,#fff 90%);background-size:260% 100%;
+  -webkit-background-clip:text;background-clip:text;color:transparent;animation:gradSlide 5s linear infinite;
+  filter:drop-shadow(0 0 24px rgba(255,190,60,.6)) drop-shadow(0 4px 14px rgba(0,0,0,.5))}
+.logo-sub{position:relative;margin-top:12px;font-size:16px;font-weight:800;letter-spacing:8px;color:#fff;
+  text-shadow:0 0 10px #ff2d95,0 0 28px #a855f7,0 2px 6px rgba(0,0,0,.6)}
+.login-tip{position:relative;display:flex;align-items:center;gap:8px;font-size:13px;color:var(--text-dim);letter-spacing:1px;
+  background:linear-gradient(160deg,rgba(255,255,255,.14),rgba(255,255,255,.04));border:1px solid rgba(255,255,255,.22);
+  padding:10px 20px;border-radius:999px;backdrop-filter:blur(16px) saturate(160%);box-shadow:0 8px 26px rgba(0,0,0,.4),inset 0 1px 0 rgba(255,255,255,.25)}
+.login-bottom{position:relative;z-index:6;display:flex;flex-direction:column;gap:14px;padding:0 32px 40px}
+.login-bottom .btn{height:54px;font-size:17px;letter-spacing:4px}
+.version{text-align:center;font-size:11px;color:var(--text-soft);margin-top:8px;letter-spacing:1px}
+
+/* ==================== 弹窗（Spring） ==================== */
+.modal{position:absolute;inset:0;z-index:40;display:flex;align-items:center;justify-content:center;opacity:0;visibility:hidden;transition:opacity .35s ease,visibility .35s;padding:22px}
+.modal.open{opacity:1;visibility:visible}
+.modal-mask{position:absolute;inset:0;background:rgba(3,0,12,.68);backdrop-filter:blur(10px)}
+.modal-box{position:relative;z-index:2;width:100%;max-width:400px;max-height:92%;overflow-y:auto;
+  background:linear-gradient(165deg,rgba(92,44,160,.9),rgba(38,14,74,.96));
+  border:1px solid rgba(200,150,255,.42);border-radius:26px;padding:24px 20px;
+  box-shadow:0 30px 80px rgba(0,0,0,.7),0 0 60px rgba(168,85,247,.35),inset 0 1px 0 rgba(255,255,255,.28);
+  backdrop-filter:blur(30px) saturate(170%);
+  transform:translateY(40px) scale(.82);opacity:0;transition:transform .55s cubic-bezier(.16,1.3,.3,1),opacity .35s ease}
+.modal.open .modal-box{transform:translateY(0) scale(1);opacity:1}
+#game.theme-day .modal-box{background:linear-gradient(165deg,#ffffff,#f1eaff);border-color:rgba(160,120,240,.5)}
+.modal-close{position:absolute;top:12px;right:12px;width:32px;height:32px;z-index:6;border-radius:50%;background:rgba(255,255,255,.14);color:#fff;font-size:15px;line-height:1;display:flex;align-items:center;justify-content:center;border:1px solid rgba(255,255,255,.22);transition:transform .25s cubic-bezier(.34,1.56,.64,1),background .2s}
+.modal-close:hover{transform:rotate(90deg) scale(1.12);background:rgba(255,255,255,.28)}
+#game.theme-day .modal-close{color:#2a1b4e;background:rgba(90,60,160,.14)}
+.modal-title{text-align:center;font-size:20px;font-weight:900;letter-spacing:3px;margin-bottom:16px;
+  background:linear-gradient(120deg,#fff,#e4c5ff,#ff9df0,#fff);background-size:250% 100%;-webkit-background-clip:text;background-clip:text;color:transparent;animation:gradSlide 4s linear infinite;filter:drop-shadow(0 0 14px rgba(192,132,252,.7))}
+#game.theme-day .modal-title{background:linear-gradient(120deg,#6d28d9,#a855f7,#ff2d95,#6d28d9);background-size:250% 100%;-webkit-background-clip:text;background-clip:text;color:transparent}
+.modal-hint{text-align:center;font-size:11px;color:var(--text-soft);margin-top:14px;line-height:1.7}
+
+/* 全部账户 */
+.accounts-row{display:flex;gap:12px;align-items:stretch}
+.account-card{flex:1;background:linear-gradient(165deg,rgba(255,255,255,.13),rgba(255,255,255,.04));border:1px solid rgba(255,255,255,.24);
+  border-radius:18px;padding:16px 12px;display:flex;flex-direction:column;align-items:center;gap:7px;text-align:center;
+  backdrop-filter:blur(10px);box-shadow:0 8px 24px rgba(0,0,0,.35),inset 0 1px 0 rgba(255,255,255,.2)}
+#game.theme-day .account-card{background:linear-gradient(165deg,rgba(150,120,230,.16),rgba(150,120,230,.05))}
+.avatar{border-radius:50%;overflow:hidden;position:relative;filter:drop-shadow(0 4px 12px rgba(0,0,0,.5))}
+.acct-name{font-size:15px;font-weight:800;color:var(--text)}
+.acct-id{font-size:12px;color:var(--text-dim);letter-spacing:1px}
+.acct-tag{font-size:10px;color:#ffd24a;border:1px solid rgba(255,210,74,.55);border-radius:999px;padding:2px 9px;background:rgba(255,210,74,.14);text-shadow:0 0 8px rgba(255,210,74,.5)}
+.add-account{width:92px;border-radius:18px;border:1.5px dashed rgba(200,150,255,.7);background:linear-gradient(165deg,rgba(168,85,247,.2),rgba(168,85,247,.06));color:#e4c5ff;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;font-weight:800;backdrop-filter:blur(8px);transition:background .25s,transform .18s cubic-bezier(.34,1.56,.64,1)}
+.add-account:hover{background:linear-gradient(165deg,rgba(168,85,247,.35),rgba(168,85,247,.12))}
+.add-account:active{transform:scale(.93)}
+.add-account b{font-size:36px;line-height:1;text-shadow:0 0 16px rgba(200,150,255,.9)}
+.add-account span{font-size:11px;color:var(--text-dim);line-height:1.5;text-align:center}
+
+/* 表单 */
+.field{display:flex;align-items:center;gap:8px;background:var(--input-bg);border:1px solid var(--input-border);border-radius:14px;padding:0 14px;height:50px;margin-bottom:12px;backdrop-filter:blur(8px);transition:border-color .25s,box-shadow .25s}
+.field:focus-within{border-color:var(--purple);box-shadow:0 0 0 3px rgba(168,85,247,.28),0 0 18px rgba(168,85,247,.35)}
+.field input{flex:1;background:none;border:none;color:var(--input-text);font-size:15px;height:100%}
+.field input::placeholder{color:var(--text-soft)}
+.field select{flex:1;background:transparent;border:none;color:var(--input-text);font-size:14px;height:100%;appearance:none;-webkit-appearance:none}
+.field .code-btn{flex:none;font-size:12px;font-weight:800;color:var(--gold);background:rgba(255,210,74,.16);border:1px solid rgba(255,210,74,.55);border-radius:10px;padding:8px 11px;white-space:nowrap;transition:background .2s;box-shadow:0 0 12px rgba(255,210,74,.2)}
+.field .code-btn:disabled{color:var(--text-soft);background:rgba(255,255,255,.06);border-color:var(--glass-border);cursor:not-allowed;box-shadow:none}
+.field-label{font-size:12px;color:var(--text-dim);margin:2px 2px 7px;display:flex;align-items:center;gap:5px}
+.eye-btn{width:32px;height:32px;flex:none;border-radius:9px;font-size:15px;color:var(--text-dim);display:flex;align-items:center;justify-content:center;transition:transform .18s,background .2s}
+.eye-btn:hover{background:rgba(255,255,255,.12);transform:scale(1.1)}
+.eye-btn.off{opacity:.4}
+.dice-btn{flex:none;width:36px;height:36px;border-radius:10px;background:var(--purple-grad);color:#fff;font-size:16px;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 16px rgba(168,85,247,.6),inset 0 1px 0 rgba(255,255,255,.4);transition:transform .3s cubic-bezier(.34,1.56,.64,1)}
+.dice-btn:active{transform:rotate(200deg) scale(.85)}
+.agree{display:flex;align-items:flex-start;gap:8px;font-size:12px;color:var(--text-dim);margin:4px 2px 14px;line-height:1.6}
+.agree input{accent-color:#a855f7;width:16px;height:16px;margin-top:1px;flex:none}
+.agree a{color:#7cc7ff;text-decoration:none}
+.links{display:flex;justify-content:space-between;font-size:13px;color:#7cc7ff;margin:2px 2px 16px}
+.links a{cursor:pointer;text-decoration:none}
+.links a:hover{text-decoration:underline}
+.field-prefix{flex:none;font-size:14px;font-weight:800;color:var(--gold);border-right:1px solid var(--glass-border);padding-right:10px;margin-right:2px;text-shadow:0 0 8px rgba(255,210,74,.5)}
+/* 安全提示 & 绑定送豆 */
+.warn-head{display:flex;align-items:center;justify-content:center;gap:8px;font-size:20px;font-weight:900;letter-spacing:2px;margin-bottom:6px;
+  background:linear-gradient(90deg,#ff9f1c,#ff2d95,#a855f7,#ff9f1c);background-size:300% 100%;-webkit-background-clip:text;background-clip:text;color:transparent;animation:gradSlide 4s linear infinite}
+.warn-body{background:linear-gradient(165deg,rgba(255,45,149,.1),rgba(168,85,247,.06));border:1px solid rgba(255,45,149,.4);border-radius:16px;padding:15px 16px;margin:12px 0 18px;font-size:13px;color:var(--text-dim);line-height:2.1;text-align:left;box-shadow:0 0 24px rgba(255,45,149,.12),inset 0 1px 0 rgba(255,255,255,.12)}
+.warn-body b{color:#ffd24a;text-shadow:0 0 8px rgba(255,210,74,.6)}
+.gift-wrap{width:124px;height:124px;margin:0 auto 8px;position:relative}
+.gift-wrap svg{width:100%;height:100%;filter:drop-shadow(0 0 22px rgba(255,210,74,.9));animation:giftFloat 2s ease-in-out infinite}
+@keyframes giftFloat{0%,100%{transform:translateY(0) rotate(-3deg)}50%{transform:translateY(-9px) rotate(3deg)}}
+.bind-promo-txt{text-align:center;font-size:14px;color:var(--text);line-height:2;margin-bottom:18px;text-shadow:0 1px 6px rgba(0,0,0,.4)}
+.bind-promo-txt b{color:#ffd24a;font-size:17px;text-shadow:0 0 14px rgba(255,210,74,.75)}
+.promo-num{display:inline-block;background:linear-gradient(120deg,#fff3b0,#ffd24a,#ff8a00,#ffd24a,#fff3b0);background-size:300% 100%;-webkit-background-clip:text;background-clip:text;color:transparent;animation:gradSlide 3s linear infinite;font-size:28px;font-weight:900;font-style:italic;filter:drop-shadow(0 0 12px rgba(255,180,50,.6))}
+
+/* ==================== 绑定手机页 ==================== */
+.bind-header{position:relative;z-index:6;display:flex;align-items:center;gap:10px;padding:14px 14px 0}
+.back-btn{width:38px;height:38px;border-radius:50%;background:linear-gradient(160deg,rgba(255,255,255,.16),rgba(255,255,255,.05));border:1px solid rgba(255,255,255,.26);color:var(--text);font-size:18px;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(10px);transition:transform .2s cubic-bezier(.34,1.56,.64,1),background .2s}
+.back-btn:active{transform:scale(.88)}
+.bind-title{font-size:19px;font-weight:900;letter-spacing:3px;color:var(--text);text-shadow:0 0 16px rgba(168,85,247,.7)}
+.bind-form{position:relative;z-index:5;flex:1;display:flex;flex-direction:column;justify-content:center;padding:0 30px 40px}
+.bind-card{background:linear-gradient(165deg,rgba(255,255,255,.14),rgba(255,255,255,.04));border:1px solid rgba(255,255,255,.24);
+  border-radius:24px;padding:24px 18px;backdrop-filter:blur(26px) saturate(170%);box-shadow:0 18px 60px rgba(0,0,0,.5),inset 0 1px 0 rgba(255,255,255,.25)}
+#game.theme-day .bind-card{background:linear-gradient(165deg,rgba(255,255,255,.75),rgba(240,233,255,.45))}
+.bind-submit{margin-top:22px}
+.news-banner{position:relative;z-index:5;display:flex;align-items:center;gap:8px;margin:12px 14px 0;padding:9px 12px;border-radius:14px;
+  background:linear-gradient(90deg,rgba(255,45,149,.9),rgba(168,85,247,.9));color:#fff;overflow:hidden;box-shadow:0 8px 24px rgba(255,45,149,.5),inset 0 1px 0 rgba(255,255,255,.35)}
+.news-banner .tag{flex:none;font-size:11px;font-weight:900;background:rgba(255,255,255,.28);border-radius:7px;padding:3px 8px;letter-spacing:1px}
+.marquee{white-space:nowrap;overflow:hidden}
+.marquee-track{display:inline-block;white-space:nowrap;animation:marqueeMove var(--marquee-speed,18s) linear infinite;will-change:transform}
+.marquee-track span{display:inline-block;padding-right:40px}
+@keyframes marqueeMove{0%{transform:translateX(0)}100%{transform:translateX(-50%)}}
+
+/* ==================== 游戏主首页 ==================== */
+.home-top{position:relative;z-index:6;padding:12px 12px 0}
+.top-row{display:flex;align-items:center;gap:10px}
+.home-logo{flex:none;width:54px;height:54px;border-radius:17px;background:linear-gradient(135deg,#ff2d95,#a855f7 60%,#7c3aed);display:flex;flex-direction:column;align-items:center;justify-content:center;color:#fff;font-weight:900;font-size:18px;line-height:1;box-shadow:0 8px 22px rgba(255,45,149,.6),0 0 30px rgba(168,85,247,.4),inset 0 1px 0 rgba(255,255,255,.45);letter-spacing:1px}
+.home-logo small{font-size:8px;letter-spacing:2px;opacity:.92;margin-top:2px}
+.top-entries{flex:1;display:flex;gap:8px;overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch}
+.top-entries::-webkit-scrollbar{display:none}
+.entry{flex:none;display:flex;flex-direction:column;align-items:center;gap:3px;padding:8px 12px;border-radius:15px;
+  background:linear-gradient(165deg,rgba(255,255,255,.14),rgba(255,255,255,.04));border:1px solid rgba(255,255,255,.22);
+  backdrop-filter:blur(12px) saturate(160%);color:var(--text);box-shadow:0 6px 18px rgba(0,0,0,.3),inset 0 1px 0 rgba(255,255,255,.2);
+  transition:transform .2s cubic-bezier(.34,1.56,.64,1),background .25s,box-shadow .3s}
+.entry:hover{transform:translateY(-3px);background:linear-gradient(165deg,rgba(255,255,255,.24),rgba(255,255,255,.08));box-shadow:0 10px 26px rgba(0,0,0,.4),0 0 22px rgba(168,85,247,.35)}
+.entry:active{transform:scale(.9)}
+.entry .ic{font-size:20px;line-height:1;filter:drop-shadow(0 2px 6px rgba(0,0,0,.4))}
+.entry .lb{font-size:10px;font-weight:700;letter-spacing:1px}
+.jackpot-banner{display:flex;align-items:center;gap:8px;margin-top:11px;padding:10px 12px;border-radius:14px;
+  background:linear-gradient(90deg,rgba(255,180,40,.24),rgba(255,80,40,.2));border:1px solid rgba(255,210,74,.45);overflow:hidden;
+  backdrop-filter:blur(10px);box-shadow:0 0 26px rgba(255,190,60,.18),inset 0 1px 0 rgba(255,255,255,.15)}
+.jackpot-banner .tag{flex:none;display:flex;align-items:center;gap:4px;font-size:11px;font-weight:900;color:#ffd24a;letter-spacing:1px;text-shadow:0 0 12px rgba(255,210,74,.9)}
+.jackpot-banner .tag b{font-size:15px}
+.jackpot-banner .marquee{flex:1;font-size:12px;color:var(--text-dim)}
+.home-main{position:relative;z-index:5;flex:1;min-height:0;padding:14px 12px 0;display:flex;gap:10px}
+.core-grid{flex:1;display:flex;flex-direction:column;gap:12px;min-width:0}
+.core-card{position:relative;border-radius:22px;overflow:hidden;text-align:left;color:#fff;padding:16px;display:flex;align-items:center;gap:14px;
+  box-shadow:0 14px 36px rgba(0,0,0,.45),inset 0 1px 0 rgba(255,255,255,.32);transition:transform .22s cubic-bezier(.34,1.56,.64,1),box-shadow .3s}
+.core-card:hover{transform:translateY(-4px) scale(1.012);box-shadow:0 20px 44px rgba(0,0,0,.55),0 0 34px rgba(255,255,255,.18),inset 0 1px 0 rgba(255,255,255,.35)}
+.core-card:active{transform:scale(.96)}
+.core-card::before{content:'';position:absolute;inset:0;background:radial-gradient(130% 150% at 100% 0%,rgba(255,255,255,.3),transparent 55%)}
+.core-card::after{content:'';position:absolute;top:0;left:0;width:55%;height:100%;background:linear-gradient(100deg,transparent,rgba(255,255,255,.4),transparent);transform:translateX(-120%) skewX(-20deg);animation:btnShine 3.6s ease-in-out infinite}
+.core-card .card-ic{flex:none;width:64px;height:64px;filter:drop-shadow(0 6px 14px rgba(0,0,0,.5))}
+.core-card h3{font-size:21px;font-weight:900;letter-spacing:2px;text-shadow:0 2px 10px rgba(0,0,0,.5)}
+.core-card p{font-size:12px;color:rgba(255,255,255,.9);margin-top:5px;letter-spacing:1px;text-shadow:0 1px 6px rgba(0,0,0,.5)}
+.core-card .badge{position:absolute;top:12px;right:12px;font-size:10px;font-weight:900;color:#5b2200;background:var(--gold-grad);border-radius:999px;padding:3px 10px;box-shadow:0 4px 14px rgba(255,180,50,.7);animation:badgePulse 1.6s ease-in-out infinite}
+@keyframes badgePulse{0%,100%{transform:scale(1)}50%{transform:scale(1.14)}}
+.card-fish{background:linear-gradient(135deg,#0a5a78,#0e7490 40%,#22d3ee 100%)}
+.card-poker{background:linear-gradient(135deg,#0f6b3c,#15803d 45%,#34d399 100%)}
+.card-slot{background:linear-gradient(135deg,#7f1d3a,#be123c 50%,#f43f5e 100%);flex:1}
+.core-card .cp-name{flex:1}
+.core-card .cp-arrow{font-size:24px;opacity:.95;text-shadow:0 2px 8px rgba(0,0,0,.5)}
+.side-bar{flex:none;width:56px;display:flex;flex-direction:column;gap:9px;padding-top:2px}
+.side-btn{display:flex;flex-direction:column;align-items:center;gap:3px;padding:9px 2px;border-radius:15px;
+  background:linear-gradient(165deg,rgba(255,255,255,.14),rgba(255,255,255,.04));border:1px solid rgba(255,255,255,.22);
+  backdrop-filter:blur(12px) saturate(160%);color:var(--text);box-shadow:0 6px 18px rgba(0,0,0,.3),inset 0 1px 0 rgba(255,255,255,.2);
+  transition:transform .2s cubic-bezier(.34,1.56,.64,1),background .25s}
+.side-btn:hover{transform:translateX(-3px);background:linear-gradient(165deg,rgba(255,255,255,.24),rgba(255,255,255,.08))}
+.side-btn:active{transform:scale(.88)}
+.side-btn .ic{font-size:18px;filter:drop-shadow(0 2px 5px rgba(0,0,0,.4))}
+.side-btn .lb{font-size:9px;font-weight:700;letter-spacing:1px}
+.side-btn.hot{background:linear-gradient(180deg,rgba(255,45,149,.4),rgba(168,85,247,.4));border-color:rgba(255,45,149,.55);animation:floaty 2.4s ease-in-out infinite;box-shadow:0 0 24px rgba(255,45,149,.35)}
+.home-bottom{position:relative;z-index:7;display:flex;align-items:center;gap:8px;padding:10px 12px calc(12px + env(safe-area-inset-bottom));
+  background:linear-gradient(180deg,rgba(16,4,34,.4),rgba(16,4,34,.94));backdrop-filter:blur(22px) saturate(170%);border-top:1px solid rgba(168,85,247,.35)}
+#game.theme-day .home-bottom{background:linear-gradient(180deg,rgba(255,255,255,.55),rgba(242,235,255,.94));border-top-color:rgba(120,90,200,.3)}
+.bottom-left{display:flex;align-items:center;gap:8px;flex:none;cursor:pointer;transition:transform .2s cubic-bezier(.34,1.56,.64,1)}
+.bottom-left:active{transform:scale(.94)}
+.b-avatar{position:relative;flex:none}
+.b-avatar .lv{position:absolute;bottom:-4px;left:50%;transform:translateX(-50%);font-size:8px;font-weight:900;color:#5b2200;background:var(--gold-grad);border-radius:999px;padding:1px 6px;white-space:nowrap;box-shadow:0 2px 8px rgba(255,180,50,.6)}
+.b-info{display:flex;flex-direction:column;gap:3px;min-width:0}
+.b-name{font-size:13px;font-weight:800;color:var(--text);max-width:88px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-shadow:0 1px 4px rgba(0,0,0,.4)}
+.b-assets{display:flex;gap:7px;font-size:11px;font-weight:700}
+.b-assets .bean{color:#ffd24a;text-shadow:0 0 10px rgba(255,210,74,.8)}
+.b-assets .gem{color:#7cc7ff;text-shadow:0 0 10px rgba(124,199,255,.7)}
+.b-assets .plus{color:#7ef0b8}
+.bottom-mid{flex:1;min-width:0;align-self:stretch;display:flex;align-items:center;padding:0 6px;border-left:1px solid rgba(255,255,255,.14);border-right:1px solid rgba(255,255,255,.14);font-size:11px;color:var(--text-dim)}
+.recharge{flex:none;display:flex;flex-direction:column;align-items:center;gap:2px;width:60px;height:56px;border-radius:17px;
+  background:var(--gold-grad);color:#5b2200;font-weight:900;font-size:12px;
+  box-shadow:0 8px 24px rgba(255,180,50,.65),inset 0 1px 0 rgba(255,255,255,.85),inset 0 -2px 6px rgba(180,80,0,.3);transition:transform .2s cubic-bezier(.34,1.56,.64,1)}
+.recharge:hover{transform:translateY(-3px) scale(1.04);box-shadow:0 12px 30px rgba(255,180,50,.85),inset 0 1px 0 rgba(255,255,255,.9)}
+.recharge:active{transform:scale(.9)}
+.recharge .ic{font-size:21px;line-height:1;animation:coinSpin 3s ease-in-out infinite}
+@keyframes coinSpin{0%,100%{transform:rotateY(0)}50%{transform:rotateY(180deg)}}
+
+/* ==================== 底部面板 ==================== */
+.panel{position:absolute;inset:0;z-index:45;opacity:0;visibility:hidden;transition:opacity .35s ease,visibility .35s}
+.panel.open{opacity:1;visibility:visible}
+.panel-mask{position:absolute;inset:0;background:rgba(3,0,12,.6);backdrop-filter:blur(8px)}
+.panel-sheet{position:absolute;left:0;right:0;bottom:0;padding:10px 18px calc(18px + env(safe-area-inset-bottom));
+  background:linear-gradient(180deg,rgba(66,28,120,.97),rgba(26,8,52,.99));border-radius:28px 28px 0 0;border-top:1px solid rgba(200,150,255,.5);
+  box-shadow:0 -16px 60px rgba(0,0,0,.7),0 0 50px rgba(168,85,247,.3);backdrop-filter:blur(30px) saturate(170%);
+  transform:translateY(105%);transition:transform .55s cubic-bezier(.16,1.3,.3,1)}
+.panel.open .panel-sheet{transform:translateY(0)}
+#game.theme-day .panel-sheet{background:linear-gradient(180deg,#ffffff,#f2ecff);border-top-color:rgba(160,120,240,.5)}
+.handle{width:46px;height:5px;border-radius:999px;background:rgba(255,255,255,.32);margin:0 auto 14px;box-shadow:0 0 10px rgba(255,255,255,.2)}
+.profile-head{display:flex;align-items:center;gap:13px;padding-bottom:16px;border-bottom:1px solid rgba(255,255,255,.12)}
+.profile-info{flex:1;min-width:0}
+.profile-name{font-size:17px;font-weight:900;color:var(--text);display:flex;align-items:center;gap:7px}
+.profile-id{font-size:12px;color:var(--text-dim);margin-top:5px;display:flex;align-items:center;gap:7px}
+.copy-btn{font-size:10px;font-weight:800;color:#7cc7ff;border:1px solid rgba(124,199,255,.55);border-radius:8px;padding:3px 9px;background:rgba(124,199,255,.14);transition:background .2s,transform .18s cubic-bezier(.34,1.56,.64,1);box-shadow:0 0 10px rgba(124,199,255,.2)}
+.copy-btn:hover{background:rgba(124,199,255,.28)}
+.copy-btn:active{transform:scale(.9)}
+.profile-phone{font-size:11px;color:var(--text-soft);margin-top:6px;display:flex;align-items:center;gap:5px}
+.profile-btns{display:flex;gap:12px;margin-top:16px}
+.profile-btns .btn{flex:1;height:48px;font-size:15px;letter-spacing:2px}
+
+/* ==================== 设置 ==================== */
+.settings-list{display:flex;flex-direction:column;gap:4px}
+.switch-row{display:flex;align-items:center;justify-content:space-between;padding:12px 4px;border-bottom:1px solid rgba(255,255,255,.1);color:var(--text);font-size:14px;font-weight:700}
+.switch-row:last-of-type{border-bottom:none}
+.switch-row .s-icon{font-size:17px;margin-right:8px;filter:drop-shadow(0 0 6px rgba(168,85,247,.5))}
+.switch-row .s-left{display:flex;align-items:center}
+.switch{position:relative;width:50px;height:28px;flex:none}
+.switch input{opacity:0;width:0;height:0}
+.switch i{position:absolute;inset:0;border-radius:999px;background:rgba(255,255,255,.16);transition:background .25s;border:1px solid rgba(255,255,255,.28);box-shadow:inset 0 2px 6px rgba(0,0,0,.3)}
+.switch i::after{content:'';position:absolute;top:2px;left:2px;width:22px;height:22px;border-radius:50%;background:linear-gradient(180deg,#fff,#e6e6f2);box-shadow:0 2px 8px rgba(0,0,0,.5);transition:transform .28s cubic-bezier(.34,1.56,.64,1)}
+.switch input:checked + i{background:linear-gradient(90deg,#a855f7,#ff2d95);border-color:rgba(255,255,255,.4);box-shadow:0 0 16px rgba(168,85,247,.6)}
+.switch input:checked + i::after{transform:translateX(22px)}
+.vol-row{display:flex;align-items:center;gap:10px;padding:10px 4px;border-bottom:1px solid rgba(255,255,255,.1)}
+.vol-row .v-icon{font-size:16px;filter:drop-shadow(0 0 6px rgba(168,85,247,.5))}
+.vol-row label{font-size:13px;font-weight:700;color:var(--text);flex:none;width:58px}
+input[type=range]{flex:1;appearance:none;-webkit-appearance:none;height:6px;border-radius:999px;background:linear-gradient(90deg,#a855f7,#ff2d95);outline:none;box-shadow:inset 0 1px 3px rgba(0,0,0,.4)}
+input[type=range]::-webkit-slider-thumb{appearance:none;-webkit-appearance:none;width:20px;height:20px;border-radius:50%;background:linear-gradient(180deg,#fff,#e0d9ff);border:2px solid #a855f7;box-shadow:0 0 12px rgba(168,85,247,.8),0 2px 6px rgba(0,0,0,.4);cursor:pointer}
+input[type=range]::-moz-range-thumb{width:20px;height:20px;border-radius:50%;background:#fff;border:2px solid #a855f7;box-shadow:0 0 12px rgba(168,85,247,.8);cursor:pointer}
+.vol-val{flex:none;width:38px;text-align:right;font-size:12px;font-weight:800;color:var(--gold);text-shadow:0 0 8px rgba(255,210,74,.5)}
+.settings-repair{margin-top:16px}
+.repair-bar{height:10px;border-radius:999px;background:rgba(0,0,0,.4);overflow:hidden;margin-top:14px;display:none;box-shadow:inset 0 2px 4px rgba(0,0,0,.5)}
+.repair-bar .fill{height:100%;width:0;background:linear-gradient(90deg,#3ee6ff,#a855f7,#ff2d95);border-radius:999px;box-shadow:0 0 14px rgba(168,85,247,.8);transition:width .2s linear}
+
+/* ==================== Toast（Spring） ==================== */
+#toast{position:absolute;left:50%;bottom:60px;z-index:99;transform:translateX(-50%);display:flex;flex-direction:column;align-items:center;gap:8px;pointer-events:none}
+.toast-item{display:flex;align-items:center;gap:8px;padding:12px 20px;border-radius:999px;font-size:13px;font-weight:700;color:#fff;
+  background:linear-gradient(165deg,rgba(40,16,70,.96),rgba(22,8,44,.98));border:1px solid rgba(200,150,255,.5);
+  box-shadow:0 14px 40px rgba(0,0,0,.6),0 0 26px rgba(168,85,247,.4),inset 0 1px 0 rgba(255,255,255,.2);backdrop-filter:blur(16px);
+  animation:toastIn .45s cubic-bezier(.16,1.3,.3,1);max-width:300px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.toast-item.out{animation:toastOut .32s ease forwards}
+@keyframes toastIn{0%{opacity:0;transform:translateY(26px) scale(.7)}100%{opacity:1;transform:translateY(0) scale(1)}}
+@keyframes toastOut{0%{opacity:1;transform:translateY(0) scale(1)}100%{opacity:0;transform:translateY(16px) scale(.85)}}
+.modal-box::-webkit-scrollbar{width:4px}
+.modal-box::-webkit-scrollbar-thumb{background:rgba(168,85,247,.55);border-radius:4px}
+
+/* ==================== v3 登录页（对标 3D 大作） ==================== */
+.login-top{justify-content:space-between;align-items:flex-start;padding:16px 14px 0;gap:8px}
+.logo-block{position:relative;z-index:6;padding-top:2px;max-width:230px}
+.logo-title{display:flex;align-items:center;gap:2px;font-size:38px;font-weight:900;letter-spacing:2px;line-height:1;font-style:italic;
+  background:linear-gradient(180deg,#fff 8%,#ffe27a 45%,#ffb020 80%,#d97b16);
+  -webkit-background-clip:text;background-clip:text;color:transparent;
+  filter:drop-shadow(0 2px 6px rgba(0,0,0,.55)) drop-shadow(0 0 18px rgba(255,190,60,.6))}
+.logo-title .king{font-style:normal;font-size:36px;line-height:1;color:#ffd24a;-webkit-text-stroke:1px rgba(255,255,255,.55);
+  text-shadow:0 0 10px rgba(255,210,74,.95),0 0 26px rgba(255,160,40,.75),0 3px 8px rgba(0,0,0,.6);
+  animation:kingFloat 2.6s ease-in-out infinite}
+@keyframes kingFloat{0%,100%{transform:translateY(0) rotate(-5deg)}50%{transform:translateY(-4px) rotate(5deg)}}
+.logo-sub{margin-top:7px;font-size:13px;font-weight:800;letter-spacing:4px;color:#fff;white-space:nowrap;
+  text-shadow:0 0 8px #3ee6ff,0 0 20px #a855f7,0 2px 5px rgba(0,0,0,.6)}
+.top-icons{position:relative;z-index:6;display:flex;flex-direction:column;gap:12px;align-items:center}
+.circle-btn{width:66px;height:66px;border-radius:50%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;color:#fff;
+  border:1.5px solid rgba(255,255,255,.5);backdrop-filter:blur(14px) saturate(170%);
+  box-shadow:0 10px 26px rgba(0,0,0,.5),inset 0 1px 0 rgba(255,255,255,.65),inset 0 -8px 16px rgba(0,0,0,.3),0 0 22px rgba(120,200,255,.4);
+  transition:transform .22s cubic-bezier(.34,1.56,.64,1),box-shadow .3s}
+.circle-btn:hover{transform:translateY(-3px) scale(1.06);box-shadow:0 14px 32px rgba(0,0,0,.55),inset 0 1px 0 rgba(255,255,255,.7),inset 0 -8px 16px rgba(0,0,0,.3),0 0 34px rgba(120,200,255,.65)}
+.circle-btn:active{transform:scale(.88)}
+.circle-cs{background:radial-gradient(circle at 32% 26%,#c4f4ff,#38bdf8 45%,#0369a1 92%)}
+.circle-cs .cb-ic{font-size:17px;line-height:1;filter:drop-shadow(0 2px 4px rgba(0,0,0,.4))}
+.circle-cs .cb-num{font-size:16px;font-weight:900;line-height:1;text-shadow:0 1px 3px rgba(0,0,0,.45)}
+.circle-cs .cb-hour{font-size:7px;font-weight:800;letter-spacing:1.5px;opacity:.95}
+.circle-fix{width:58px;height:58px;background:radial-gradient(circle at 32% 26%,#eef4ff,#94a3b8 52%,#334155 95%);font-size:10px;font-weight:800;
+  box-shadow:0 8px 22px rgba(0,0,0,.5),inset 0 1px 0 rgba(255,255,255,.6),inset 0 -6px 12px rgba(0,0,0,.25),0 0 18px rgba(148,163,184,.35)}
+.circle-fix .cb-ic{font-size:20px;line-height:1;filter:drop-shadow(0 2px 4px rgba(0,0,0,.4))}
+.login-mid{flex:1;min-height:110px}
+.login-bottom{padding:0 24px 20px;gap:12px}
+.login-bottom .btn{height:56px;border-radius:18px;font-size:17px;font-weight:900;letter-spacing:4px}
+.btn-guest{background:linear-gradient(180deg,#b39dfa,#8b5cf6 45%,#5b21b6);color:#fff;
+  box-shadow:0 10px 28px rgba(139,92,246,.6),0 3px 8px rgba(0,0,0,.35),inset 0 1px 0 rgba(255,255,255,.55),inset 0 -3px 8px rgba(40,10,100,.5)}
+.btn-guest:hover{box-shadow:0 14px 36px rgba(139,92,246,.85),0 4px 10px rgba(0,0,0,.4),inset 0 1px 0 rgba(255,255,255,.6),inset 0 -3px 8px rgba(40,10,100,.5)}
+.btn-account{background:linear-gradient(180deg,#ffe98a,#fbbf24 50%,#d97706);color:#4a2400;
+  box-shadow:0 10px 28px rgba(251,191,36,.6),0 3px 8px rgba(0,0,0,.35),inset 0 1px 0 rgba(255,255,255,.9),inset 0 -3px 8px rgba(150,80,0,.35)}
+.btn-account:hover{box-shadow:0 14px 36px rgba(251,191,36,.85),0 4px 10px rgba(0,0,0,.4),inset 0 1px 0 rgba(255,255,255,.95),inset 0 -3px 8px rgba(150,80,0,.35)}
+.btn-all{background:linear-gradient(180deg,#fdba74,#f97316 50%,#dc2626);color:#fff;
+  box-shadow:0 10px 28px rgba(249,115,22,.55),0 3px 8px rgba(0,0,0,.35),inset 0 1px 0 rgba(255,255,255,.6),inset 0 -3px 8px rgba(120,20,20,.4)}
+.btn-all:hover{box-shadow:0 14px 36px rgba(249,115,22,.8),0 4px 10px rgba(0,0,0,.4),inset 0 1px 0 rgba(255,255,255,.65),inset 0 -3px 8px rgba(120,20,20,.4)}
+.b-ic{flex:none;width:36px;height:36px;border-radius:11px;display:flex;align-items:center;justify-content:center;font-size:19px;
+  background:rgba(255,255,255,.24);box-shadow:inset 0 1px 0 rgba(255,255,255,.55),inset 0 -2px 4px rgba(0,0,0,.12)}
+.compliance{text-align:center;font-size:9.5px;color:rgba(255,255,255,.45);line-height:1.9;letter-spacing:.4px;margin-top:6px}
+.ver-line{text-align:right;font-size:9px;color:rgba(255,255,255,.35);letter-spacing:.4px;margin-top:2px}
+/* 声音提示（解决移动端自动播放限制） */
+#sound-hint{position:absolute;left:50%;bottom:84px;transform:translateX(-50%) scale(.9);z-index:60;display:none;align-items:center;gap:6px;pointer-events:none;
+  padding:9px 16px;border-radius:999px;font-size:12px;font-weight:700;color:#fff;white-space:nowrap;
+  background:linear-gradient(160deg,rgba(80,30,140,.88),rgba(40,12,80,.94));border:1px solid rgba(200,150,255,.5);
+  box-shadow:0 10px 30px rgba(0,0,0,.5),0 0 20px rgba(168,85,247,.45);backdrop-filter:blur(12px);
+  animation:soundPulse 1.6s ease-in-out infinite}
+#sound-hint.show{display:flex}
+#sound-hint.off{display:none}
+@keyframes soundPulse{0%,100%{transform:translateX(-50%) scale(1)}50%{transform:translateX(-50%) scale(1.06)}}
+/* PC 网页端流光背景 */
+#stage::before{content:'';position:absolute;inset:0;pointer-events:none;z-index:0;
+  background:radial-gradient(55% 80% at 18% 22%,rgba(168,85,247,.16),transparent 60%),
+  radial-gradient(45% 70% at 82% 32%,rgba(255,45,149,.12),transparent 60%),
+  radial-gradient(40% 60% at 50% 100%,rgba(34,211,238,.09),transparent 60%);
+  background-size:220% 220%;animation:stageFlow 18s ease-in-out infinite alternate}
+@keyframes stageFlow{0%{background-position:0% 0%}100%{background-position:100% 100%}}
+
+
+/* ==================== v4 真实原图背景（login_bg.jpg） ==================== */
+:root{
+  --login-logo-x:14px; --login-logo-y:14px;
+  --login-btns-lr:22px; --login-btns-b:16px;
+}
+.screen-bg{position:absolute;inset:0;z-index:0;background:#0b0118 url('images/lobby_bg.jpg') center/cover no-repeat}
+#screen-login .screen-bg,#screen-loading .screen-bg{background-image:url('images/bg_portrait.jpg')}
+.screen-shade{position:absolute;inset:0;z-index:1;pointer-events:none;
+  background:linear-gradient(180deg,rgba(5,0,18,.38) 0%,rgba(5,0,18,.10) 30%,rgba(5,0,18,.10) 62%,rgba(5,0,18,.58) 100%)}
+.screen-shade.strong{background:linear-gradient(180deg,rgba(5,0,18,.66) 0%,rgba(5,0,18,.5) 35%,rgba(5,0,18,.55) 65%,rgba(5,0,18,.84) 100%)}
+/* 登录页 UI 绝对定位悬浮在原图上 */
+#screen-login .login-top{position:absolute;top:var(--login-logo-y);left:var(--login-logo-x);right:var(--login-logo-x);display:flex;justify-content:space-between;align-items:flex-start;z-index:6}
+#screen-login .login-mid{display:none}
+#screen-login .login-bottom{position:absolute;left:var(--login-btns-lr);right:var(--login-btns-lr);bottom:var(--login-btns-b);z-index:6}
+/* 性能优化：大表面去掉昂贵的 backdrop-filter（静态背景无需实时模糊） */
+.home-bottom{backdrop-filter:none}
+.modal-box{backdrop-filter:blur(14px) saturate(140%)}
+.panel-sheet{backdrop-filter:blur(14px) saturate(140%)}
+/* 整页淡入 */
+#game{animation:gameIn .9s ease both}
+@keyframes gameIn{0%{opacity:0}100%{opacity:1}}
+/* 光扫改为 transform 合成（降低发热） */
+
+/* ==================== v5 主页大厅（1:1 对标商业大作） ==================== */
+/* 流光底层质感 */
+.lobby-flow{position:absolute;inset:0;z-index:2;pointer-events:none;overflow:hidden}
+.lobby-flow::before{content:'';position:absolute;top:-25%;left:0;width:60%;height:150%;transform:translateX(-160%) rotate(18deg);
+  background:linear-gradient(90deg,transparent,rgba(168,85,247,.10),rgba(255,255,255,.07),rgba(62,230,255,.08),transparent);
+  animation:lobbyFlow 8s linear infinite}
+@keyframes lobbyFlow{0%{transform:translateX(-160%) rotate(18deg)}100%{transform:translateX(420%) rotate(18deg)}}
+/* 顶部导航 */
+.home-top{position:relative;z-index:6;padding:10px 10px 0}
+.top-row{display:flex;align-items:center;gap:8px}
+.home-logo{flex:none;width:48px;height:48px;border-radius:15px;background:linear-gradient(135deg,#ff2d95,#a855f7 60%,#7c3aed);display:flex;flex-direction:column;align-items:center;justify-content:center;color:#fff;font-weight:900;font-size:16px;line-height:1;box-shadow:0 8px 22px rgba(255,45,149,.6),0 0 26px rgba(168,85,247,.45),inset 0 1px 0 rgba(255,255,255,.45);letter-spacing:1px}
+.home-logo small{font-size:7px;letter-spacing:2px;opacity:.92;margin-top:2px}
+.top-entries{flex:1;display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch;justify-content:flex-end}
+.top-entries::-webkit-scrollbar{display:none}
+.entry{position:relative;flex:none;display:flex;flex-direction:column;align-items:center;gap:3px;padding:3px 5px;border-radius:14px;color:var(--text);transition:transform .2s cubic-bezier(.34,1.56,.64,1)}
+.entry:hover{transform:translateY(-3px)}
+.entry:active{transform:scale(.88)}
+.entry .entry-ring{width:42px;height:42px;border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:21px;
+  background:linear-gradient(160deg,rgba(255,255,255,.18),rgba(255,255,255,.05));
+  border:1.5px solid rgba(255,200,80,.7);backdrop-filter:blur(8px);
+  box-shadow:0 6px 16px rgba(0,0,0,.4),0 0 14px rgba(255,190,60,.4),inset 0 1px 0 rgba(255,255,255,.45)}
+.entry .ic{filter:drop-shadow(0 2px 4px rgba(0,0,0,.55))}
+.entry .lb{font-size:9px;font-weight:800;letter-spacing:.5px;text-shadow:0 1px 4px rgba(0,0,0,.6)}
+.entry .dot{position:absolute;top:0;right:2px;font-size:11px;color:#ff3b5c;text-shadow:0 0 8px #ff3b5c,0 0 14px #ff3b5c;animation:dotPulse 1.2s ease-in-out infinite}
+@keyframes dotPulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.55;transform:scale(1.25)}}
+/* 中奖喜报横幅（橙色外发光） */
+.jackpot-banner{display:flex;align-items:center;gap:8px;margin-top:9px;padding:9px 12px;border-radius:14px;
+  background:linear-gradient(90deg,rgba(60,16,8,.82),rgba(50,10,40,.85));
+  border:2px solid rgba(255,150,20,.75);box-shadow:0 0 22px rgba(255,140,0,.5),inset 0 0 16px rgba(255,140,0,.18);overflow:hidden}
+.jackpot-banner .tag{flex:none;display:flex;align-items:center;gap:4px;font-size:11px;font-weight:900;color:#ffd24a;letter-spacing:1px;text-shadow:0 0 12px rgba(255,210,74,.95)}
+.jackpot-banner .tag b{font-size:15px}
+.jackpot-banner .marquee{flex:1;font-size:12px;color:#ffe4c4;text-shadow:0 0 8px rgba(255,170,60,.6)}
+/* 三大游戏入口 */
+.home-main{position:relative;z-index:5;flex:1;min-height:0;display:flex;gap:6px;padding:0 10px}
+.core-grid{flex:1;min-width:0;display:grid;grid-template-columns:repeat(3,1fr);gap:8px;align-content:start;padding:12px 0 0}
+.core-card{position:relative;height:158px;border-radius:18px;overflow:hidden;text-align:center;color:#fff;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:3px;padding:0 5px 10px;
+  border:1.5px solid rgba(255,210,74,.6);
+  background-size:cover;background-repeat:no-repeat;
+  box-shadow:0 12px 30px rgba(0,0,0,.5),0 0 18px rgba(255,190,60,.25),inset 0 1px 0 rgba(255,255,255,.35);
+  transition:transform .22s cubic-bezier(.34,1.56,.64,1),box-shadow .3s}
+.core-card:hover{transform:translateY(-4px) scale(1.02);box-shadow:0 18px 40px rgba(0,0,0,.6),0 0 30px rgba(255,190,60,.45),inset 0 1px 0 rgba(255,255,255,.4)}
+.core-card:active{transform:scale(.95)}
+.card-fish{background:url('images/card_fish.jpg') center/cover no-repeat}
+.card-poker{background:url('images/card_poker.jpg') center/cover no-repeat}
+.card-slot{background:url('images/card_slot.jpg') center/cover no-repeat}
+.core-card .badge{position:absolute;top:6px;right:6px;z-index:2;font-size:9px;font-weight:900;color:#5b2200;background:linear-gradient(180deg,#ffe27a,#ff9f1c);border-radius:999px;padding:2px 8px;box-shadow:0 4px 12px rgba(255,180,50,.7);animation:badgePulse 1.6s ease-in-out infinite}
+.card-title{position:relative;z-index:2;font-size:17px;font-weight:900;letter-spacing:1px;line-height:1.2;font-style:italic;text-shadow:0 2px 6px rgba(0,0,0,.7);padding:4px 10px}
+.card-title::before{content:'';position:absolute;inset:0;border-radius:10px;background:rgba(6,3,24,.58);border:1px solid rgba(255,255,255,.16);box-shadow:0 2px 8px rgba(0,0,0,.4);z-index:-1}
+.t-fish{background:linear-gradient(180deg,#e0fbff,#38bdf8 55%,#0369a1);-webkit-background-clip:text;background-clip:text;color:transparent;filter:drop-shadow(0 0 10px rgba(56,189,248,.65))}
+.t-poker{background:linear-gradient(180deg,#f3e8ff,#a855f7 55%,#6d28d9);-webkit-background-clip:text;background-clip:text;color:transparent;filter:drop-shadow(0 0 10px rgba(168,85,247,.7))}
+.t-slot{background:linear-gradient(180deg,#ffe4e6,#f43f5e 55%,#be123c);-webkit-background-clip:text;background-clip:text;color:transparent;filter:drop-shadow(0 0 10px rgba(244,63,94,.7))}
+.card-sub{position:relative;z-index:2;font-size:9px;color:rgba(255,255,255,.82);letter-spacing:1px;text-shadow:0 1px 4px rgba(0,0,0,.6)}
+/* 右侧功能侧边栏 */
+.side-bar{flex:none;width:52px;display:flex;flex-direction:column;gap:8px;padding-top:12px}
+.side-btn{display:flex;flex-direction:column;align-items:center;gap:2px;padding:8px 2px;border-radius:14px;
+  background:linear-gradient(160deg,rgba(255,255,255,.16),rgba(255,255,255,.05));border:1.5px solid rgba(255,210,74,.5);
+  backdrop-filter:blur(8px);color:var(--text);
+  box-shadow:0 6px 16px rgba(0,0,0,.4),0 0 12px rgba(255,190,60,.25),inset 0 1px 0 rgba(255,255,255,.3);
+  transition:transform .2s cubic-bezier(.34,1.56,.64,1),box-shadow .3s}
+.side-btn:hover{transform:translateX(-3px);box-shadow:0 10px 22px rgba(0,0,0,.5),0 0 22px rgba(255,190,60,.5)}
+.side-btn:active{transform:scale(.88)}
+.side-btn .ic{font-size:17px;filter:drop-shadow(0 2px 4px rgba(0,0,0,.5))}
+.side-btn .lb{font-size:8px;font-weight:800;letter-spacing:.5px}
+.side-btn.hot{background:linear-gradient(180deg,rgba(255,45,149,.42),rgba(168,85,247,.42));border-color:rgba(255,45,149,.6);animation:floaty 2.4s ease-in-out infinite;box-shadow:0 0 22px rgba(255,45,149,.45),inset 0 1px 0 rgba(255,255,255,.4)}
+/* 底部个人信息与资产栏 */
+.home-bottom{position:relative;z-index:7;display:flex;align-items:center;gap:8px;padding:9px 10px calc(10px + env(safe-area-inset-bottom));
+  background:linear-gradient(180deg,rgba(14,4,30,.5),rgba(14,4,30,.95));border-top:1px solid rgba(255,210,74,.35)}
+.bottom-left{display:flex;align-items:center;gap:8px;flex:none;cursor:pointer;transition:transform .2s cubic-bezier(.34,1.56,.64,1)}
+.bottom-left:active{transform:scale(.94)}
+.b-avatar{position:relative;flex:none;border-radius:50%;padding:2.5px;background:linear-gradient(135deg,#ffe27a,#ff9f1c);box-shadow:0 0 14px rgba(255,180,50,.65)}
+.b-avatar .avatar{display:block;border-radius:50%}
+.b-avatar .lv{position:absolute;bottom:-3px;left:50%;transform:translateX(-50%);font-size:8px;font-weight:900;color:#5b2200;background:linear-gradient(180deg,#ffe27a,#ff9f1c);border-radius:999px;padding:1px 6px;white-space:nowrap;box-shadow:0 2px 8px rgba(255,180,50,.7)}
+.b-info{display:flex;flex-direction:column;gap:3px;min-width:0}
+.b-name{font-size:13px;font-weight:800;color:var(--text);max-width:84px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-shadow:0 1px 4px rgba(0,0,0,.5)}
+.b-assets{display:flex;gap:7px;font-size:11px;font-weight:800}
+.b-assets svg{vertical-align:-2px;margin-right:2px}
+.b-assets .bean{color:#ffd24a;text-shadow:0 0 10px rgba(255,210,74,.85)}
+.b-assets .gem{color:#7cc7ff;text-shadow:0 0 10px rgba(124,199,255,.75)}
+.b-assets .plus{color:#7ef0b8;font-weight:900}
+.bottom-mid{flex:1;min-width:0;align-self:stretch;display:flex;align-items:center;gap:6px;padding:0 10px;border-radius:16px;
+  background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.18);position:relative;font-size:11px;color:var(--text-dim)}
+.bottom-mid::before{content:'';position:absolute;left:-6px;top:50%;transform:translateY(-50%);border:6px solid transparent;border-right-color:rgba(255,255,255,.16)}
+.bottom-mid .chat-ic{flex:none;font-size:14px}
+.bottom-mid .marquee{flex:1;overflow:hidden}
+/* 金色充值按钮（金元宝） */
+.recharge{flex:none;width:64px;height:60px;border-radius:18px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;
+  background:radial-gradient(circle at 32% 24%,#fff3b0,#ffd24a 42%,#ff9f1c 78%,#d97706);
+  border:2px solid rgba(255,255,255,.6);
+  box-shadow:0 8px 26px rgba(255,170,40,.75),0 3px 8px rgba(0,0,0,.4),inset 0 2px 6px rgba(255,255,255,.85),inset 0 -6px 14px rgba(150,80,0,.45);
+  transition:transform .22s cubic-bezier(.34,1.56,.64,1),box-shadow .3s;animation:rePulse 2.2s ease-in-out infinite}
+.recharge:hover{transform:translateY(-3px) scale(1.05);box-shadow:0 14px 34px rgba(255,170,40,.95),0 4px 10px rgba(0,0,0,.45),inset 0 2px 6px rgba(255,255,255,.9),inset 0 -6px 14px rgba(150,80,0,.45)}
+.recharge:active{transform:scale(.9)}
+.recharge .re-ic{width:26px;height:20px;filter:drop-shadow(0 2px 4px rgba(120,60,0,.5))}
+.recharge .re-txt{font-size:12px;font-weight:900;color:#5b2200;letter-spacing:1px;text-shadow:0 1px 0 rgba(255,255,255,.6)}
+@keyframes rePulse{0%,100%{transform:scale(1)}50%{transform:scale(1.05)}}
+
+
+/* ==================== v6 竖屏紧凑布局（消除中间空白） ==================== */
+.home-main{display:flex;gap:8px;padding:0 10px}
+.core-grid{flex:1;min-width:0;display:flex;flex-direction:column;gap:10px;padding:10px 0 0}
+.card-fish{height:196px;flex:none;width:100%}
+.cards-row2{flex:1;min-height:0;display:flex;gap:10px;align-items:stretch}
+.cards-row2 .core-card{flex:1 1 0;min-width:0;width:auto;height:auto}
+.side-bar{width:52px;display:flex;flex-direction:column;gap:8px;padding:10px 0 8px}
+.side-btn{flex:1;min-height:52px}
+
+
+/* ==================== v8 全屏横版大厅（1:1 对标横版原图） ==================== */
+/* ---- 加载页（横版） ---- */
+.loading-content{padding:0 30px 22px;gap:8px}
+.mini-logo b{font-size:26px}
+.mini-logo span{font-size:11px}
+.loading-title{font-size:11px}
+.progress-wrap{padding:12px 16px}
+.progress-bar{height:12px}
+.progress-meta{font-size:11px;margin-top:7px}
+/* ---- 登录页（横版） ---- */
+#screen-login .login-top{top:8px;left:12px;right:12px}
+.logo-title{font-size:30px;letter-spacing:3px}
+.logo-title .king{font-size:28px}
+.logo-sub{font-size:11px;letter-spacing:5px;margin-top:4px}
+.logo-glow{width:200px;height:200px}
+.logo-icon{font-size:30px;margin-bottom:2px}
+.login-tip{font-size:11px;padding:7px 14px}
+.circle-btn{width:54px;height:54px}
+.circle-btn .cb-ic{font-size:14px}
+.circle-btn .cb-num{font-size:14px}
+.circle-btn .cb-hour{font-size:6px}
+.circle-fix{width:48px;height:48px;font-size:9px}
+.circle-fix .cb-ic{font-size:17px}
+#screen-login .login-mid{min-height:0;justify-content:center;gap:10px}
+#screen-login .login-bottom{left:14px;right:14px;bottom:6px;display:flex;flex-direction:column;gap:2px;align-items:stretch}
+.lb-btns{display:flex;flex-direction:row;gap:10px}
+#screen-login .login-bottom .btn{flex:1;height:50px;font-size:15px;letter-spacing:2px;border-radius:15px}
+.b-ic{width:32px;height:32px;font-size:17px;border-radius:9px}
+.compliance{font-size:8.5px;line-height:1.6;margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ver-line{font-size:8px;margin-top:0}
+/* ---- 绑定页（横版双列） ---- */
+.bind-header{padding:8px 12px 0}
+.back-btn{width:34px;height:34px;font-size:16px}
+.bind-title{font-size:16px;letter-spacing:2px}
+.news-banner{margin:8px 12px 0;padding:7px 10px;border-radius:11px}
+.news-banner .tag{font-size:10px}
+.bind-form{padding:10px 26px 12px;justify-content:flex-start}
+.bind-card{padding:16px 16px 14px;border-radius:18px}
+.bind-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px}
+.bind-row .field{height:46px;margin-bottom:0}
+.bind-submit{margin-top:2px;height:50px;font-size:16px}
+/* ---- 大厅（横版） ---- */
+.home-top{padding:8px 10px 0}
+.top-row{display:flex;align-items:center;gap:10px}
+.home-logo{width:42px;height:42px;border-radius:13px;font-size:15px}
+.home-logo small{font-size:6px}
+.jackpot-banner{flex:1;min-width:0;margin-top:0;padding:7px 10px;border-radius:12px}
+.jackpot-banner .tag{font-size:10px}
+.jackpot-banner .tag b{font-size:13px}
+.jackpot-banner .marquee{font-size:11px}
+.top-entries{flex:none;gap:5px}
+.entry .entry-ring{width:36px;height:36px;font-size:17px;border-radius:11px}
+.entry .lb{font-size:8px}
+.entry .dot{font-size:9px}
+.home-main{flex:1;min-height:0;display:flex;gap:8px;padding:8px 10px 6px}
+.core-grid{flex:1;min-width:0;display:flex;flex-direction:row;gap:10px;padding:0}
+.card-fish{height:auto;width:auto}
+.cards-row2{display:contents}
+.core-card{flex:1;min-width:0;height:auto;border-radius:16px;padding:0 6px 8px}
+.card-fish .badge{top:6px;right:6px}
+.card-title{font-size:19px;padding:4px 10px}
+.card-title::before{border-radius:10px}
+.card-sub{font-size:9.5px;margin-top:1px}
+.side-bar{width:46px;gap:6px;padding:0}
+.side-btn{flex:1;min-height:42px;border-radius:12px}
+.side-btn .ic{font-size:15px}
+.side-btn .lb{font-size:7.5px}
+.home-bottom{padding:7px 10px calc(8px + env(safe-area-inset-bottom));gap:8px}
+.b-avatar{width:38px;height:38px}
+.b-avatar .avatar{width:33px!important;height:33px!important}
+.b-name{font-size:12px;max-width:72px}
+.b-assets{font-size:10px}
+.bottom-mid{font-size:10px;padding:0 8px;border-radius:14px}
+.recharge{width:56px;height:50px;border-radius:15px}
+.recharge .re-ic{width:22px;height:17px}
+.recharge .re-txt{font-size:11px}
+/* 设置/弹窗微调 */
+.settings-list .vol-row{padding:8px 2px}
+.switch-row{padding:9px 2px}
+#toast .toast-item{font-size:12px;padding:9px 16px}
+
+
+/* v8.1 顶部精修：横幅绝对居中，图标靠右，LOGO 靠左 */
+.top-row{position:relative;display:flex;align-items:center}
+.home-logo{margin-right:10px}
+.top-entries{margin-left:auto;gap:4px}
+.entry .entry-ring{width:32px;height:32px;font-size:15px;border-radius:10px}
+.entry .lb{font-size:7.5px}
+.jackpot-banner{position:absolute;left:50%;transform:translateX(-50%);width:470px;max-width:56%;margin-top:0}
+
+
+/* ==================== v9 竖屏终极版（回归手机竖屏 + 竖版原图背景 + 高显眼标题） ==================== */
+/* ---- 登录页（竖屏） ---- */
+#screen-login .login-top{top:14px;left:12px;right:12px}
+.logo-title{font-size:40px;letter-spacing:3px}
+.logo-title .king{font-size:36px}
+.logo-sub{font-size:13px;letter-spacing:6px;margin-top:6px}
+.logo-glow{width:240px;height:240px}
+.logo-icon{font-size:36px;margin-bottom:4px}
+.circle-btn{width:62px;height:62px}
+.circle-btn .cb-ic{font-size:16px}
+.circle-btn .cb-num{font-size:15px}
+.circle-btn .cb-hour{font-size:6.5px}
+.circle-fix{width:54px;height:54px;font-size:10px}
+.circle-fix .cb-ic{font-size:19px}
+#screen-login .login-bottom{left:24px;right:24px;bottom:14px;display:flex;flex-direction:column;gap:6px}
+.lb-btns{display:flex;flex-direction:column;gap:12px}
+#screen-login .login-bottom .btn{flex:none;height:54px;font-size:17px;letter-spacing:4px;border-radius:999px}
+.b-ic{width:36px;height:36px;font-size:19px;border-radius:11px}
+.compliance{font-size:9.5px;line-height:1.8;margin-top:4px;white-space:normal}
+.ver-line{font-size:9px}
+/* ---- 绑定页（竖屏单列） ---- */
+.bind-header{padding:14px 14px 0}
+.back-btn{width:38px;height:38px;font-size:18px}
+.bind-title{font-size:19px}
+.news-banner{margin:12px 14px 0;padding:9px 12px;border-radius:14px}
+.bind-form{padding:20px 30px 30px;justify-content:center}
+.bind-card{padding:22px 18px;border-radius:20px}
+.bind-row{display:block;margin-bottom:0}
+.bind-row .field{height:50px;margin-bottom:12px}
+.bind-submit{margin-top:8px;height:54px;font-size:17px}
+/* ---- 大厅（竖屏紧凑 + 原图背景） ---- */
+.home-top{padding:10px 10px 0}
+.top-row{position:static;display:flex;align-items:center;gap:8px}
+.home-logo{width:50px;height:50px;border-radius:15px;font-size:17px;margin-right:0}
+.top-entries{flex:none;margin-left:0;gap:6px;justify-content:flex-end}
+.entry .entry-ring{width:40px;height:40px;font-size:19px;border-radius:12px}
+.entry .lb{font-size:8.5px}
+.jackpot-banner{position:static;transform:none;left:auto;width:auto;max-width:none;flex:1;min-width:0;margin-top:0;padding:9px 12px;border-radius:14px}
+.home-main{flex:1;min-height:0;display:flex;gap:8px;padding:10px 10px 6px}
+.core-grid{flex:1;min-width:0;display:grid;grid-template-columns:1fr 1fr;grid-template-rows:196px 1fr;gap:10px;padding:0}
+.card-fish{grid-column:1/-1;height:auto;width:auto}
+.card-poker,.card-slot{height:auto;min-width:0}
+.core-card{border-radius:18px;padding:0 6px 10px}
+/* 卡片标题：加粗描边 + 深色高光底衬，极度显眼 */
+.card-title{font-size:21px;font-weight:900;letter-spacing:1px;padding:4px 11px;-webkit-text-stroke:1px rgba(8,4,28,.9);text-shadow:0 2px 8px rgba(0,0,0,.85)}
+.card-title::before{background:rgba(8,4,30,.82);border:1px solid rgba(255,255,255,.28);box-shadow:0 3px 10px rgba(0,0,0,.55)}
+.card-sub{font-size:11px;font-weight:800;letter-spacing:1px;-webkit-text-stroke:.5px rgba(8,4,28,.85);background:rgba(8,4,30,.64);border-radius:8px;padding:2px 9px;color:#fff;text-shadow:0 1px 4px rgba(0,0,0,.75)}
+.side-bar{width:50px;gap:8px;padding:0}
+.side-btn{min-height:54px;border-radius:13px}
+.side-btn .ic{font-size:17px}
+.side-btn .lb{font-size:8px}
+.home-bottom{padding:9px 10px calc(10px + env(safe-area-inset-bottom));gap:8px}
+.b-avatar{width:44px;height:44px}
+.b-avatar .avatar{width:39px!important;height:39px!important}
+.b-name{font-size:13px;max-width:84px}
+.b-assets{font-size:11px}
+.bottom-mid{font-size:11px;padding:0 10px;border-radius:16px}
+.recharge{width:60px;height:54px;border-radius:17px}
+.recharge .re-ic{width:24px;height:18px}
+.recharge .re-txt{font-size:12px}
+/* ---- 弹窗 / Toast / 提示（竖屏位置） ---- */
+.modal-box{max-width:342px;max-height:88%;padding:24px 20px}
+#toast{bottom:110px}
+#sound-hint{bottom:208px}
+.toast-item{font-size:13px;padding:12px 20px}
+
+
+/* ==================== v10 三张全宽横向大卡（竖排） ==================== */
+.home-main{display:flex;gap:8px;padding:10px 10px 6px}
+.core-grid{flex:1;min-width:0;display:flex;flex-direction:column;gap:10px;padding:0}
+.core-card{width:100%;flex:1;min-height:0;flex-direction:column;align-items:flex-start;justify-content:flex-end;gap:4px;padding:0 0 12px 14px;border-radius:20px}
+.card-fish{height:auto;width:100%}
+.card-poker,.card-slot{height:auto}
+.card-title{font-size:22px;font-weight:900;letter-spacing:1px;padding:5px 12px;-webkit-text-stroke:1px rgba(8,4,28,.9);text-shadow:0 2px 8px rgba(0,0,0,.85)}
+.card-title::before{background:rgba(8,4,30,.84);border:1px solid rgba(255,255,255,.3);box-shadow:0 3px 10px rgba(0,0,0,.6)}
+.card-sub{font-size:11.5px;font-weight:800;letter-spacing:1px;-webkit-text-stroke:.5px rgba(8,4,28,.85);background:rgba(8,4,30,.66);border-radius:8px;padding:2px 10px;color:#fff;text-shadow:0 1px 4px rgba(0,0,0,.8)}
+/* 底部栏健壮性：头像与充值永不挤压、不被裁切 */
+.home-bottom{flex:none;min-height:64px}
+.bottom-left{flex:none;flex-shrink:0}
+.recharge{flex:none;flex-shrink:0}
+.bottom-mid{flex:1;min-width:0}
+
+
+/* ==================== v11 卡片标题极致高亮（白字+粗黑描边+金色荧光+亮金底衬） ==================== */
+.card-title{
+  font-size:24px;font-weight:900;font-style:italic;letter-spacing:1.5px;
+  color:#ffffff;background:none;
+  -webkit-background-clip:border-box;background-clip:border-box;
+  -webkit-text-fill-color:#ffffff;
+  filter:none;
+  -webkit-text-stroke:2.5px #160b00;
+  paint-order:stroke fill;
+  text-shadow:0 0 10px rgba(255,214,90,1),0 0 24px rgba(255,170,30,.95),0 4px 9px rgba(0,0,0,.9);
+  padding:7px 18px;
+}
+.card-title::before{
+  background:linear-gradient(135deg,rgba(255,232,150,.95),rgba(255,186,45,.9));
+  border:2px solid #FFE27A;
+  box-shadow:0 0 20px rgba(255,205,70,.95),0 0 46px rgba(255,165,25,.55),0 5px 14px rgba(0,0,0,.55),inset 0 1px 0 rgba(255,255,255,.95),inset 0 -3px 8px rgba(200,120,0,.5);
+  border-radius:13px;
+}
+.card-sub{
+  color:#fff;font-weight:900;font-size:12px;letter-spacing:1px;
+  -webkit-text-stroke:1.3px #160b00; paint-order:stroke fill;
+  background:linear-gradient(135deg,rgba(255,205,85,.92),rgba(255,150,20,.88));
+  border:1.5px solid #FFD700;border-radius:9px;padding:3px 12px;margin-top:5px;
+  text-shadow:0 0 8px rgba(255,195,55,.95),0 2px 5px rgba(0,0,0,.85);
+}
+
+</style>
+</head>
+<body>
+<div id="stage">
+<div id="game">
+
+  <!-- ==================== 图1 加载与更新页 ==================== -->
+  <section class="screen active" id="screen-loading">
+    <div class="screen-bg"></div>
+    <div class="screen-shade"></div>
+    <div class="loading-content">
+      <div class="mini-logo"><b>728</b><span>POKER GAME</span></div>
+      <div class="loading-title">夜色派对 · 百人棋牌</div>
+      <div class="progress-wrap">
+        <div class="progress-bar"><div class="progress-fill" id="loading-fill"></div></div>
+        <div class="progress-meta">
+          <span id="loading-desc">正在下载最新更新包</span>
+          <span id="loading-size">0.0 KB / 59.4 MB</span>
+          <span class="pct" id="loading-pct">0%</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ==================== 图2 登录选择界面 ==================== -->
+  <section class="screen" id="screen-login">
+    <div class="screen-bg"></div>
+    <div class="screen-shade"></div>
+    <div class="login-top">
+      <div class="logo-block">
+        <div class="logo-title">728<i class="king">&#9812;</i>游戏</div>
+        <div class="logo-sub">&#9670; POKER GAME &#9670;</div>
+      </div>
+      <div class="top-icons">
+        <button class="circle-btn circle-cs" data-action="service">
+          <span class="cb-ic">&#127911;</span>
+          <span class="cb-num">24</span><span class="cb-hour">HOURS</span>
+        </button>
+        <button class="circle-btn circle-fix" data-action="repair">
+          <span class="cb-ic">&#9881;&#65039;</span>修复
+        </button>
+      </div>
+    </div>
+    <div class="login-mid"></div>
+    <div class="login-bottom">
+      <div class="lb-btns">
+        <button class="btn btn-guest" data-action="guest"><span class="b-ic">&#127918;</span>游客登录</button>
+        <button class="btn btn-account" data-action="account-login"><span class="b-ic">&#128222;</span>账号登录</button>
+        <button class="btn btn-all" data-action="all-accounts"><span class="b-ic">&#128273;</span>全部账户</button>
+      </div>
+      <div class="compliance">抵制不良游戏 拒绝盗版游戏 注意自我保护 谨防受骗上当<br>适当游戏益处 沉迷游戏伤身 合理安排时间 享受健康生活</div>
+      <div class="ver-line">v1.0.33.51-0.1.0.33.51</div>
+    </div>
+  </section>
+
+  <!-- ==================== 图7 绑定手机号界面 ==================== -->
+  <section class="screen" id="screen-bind">
+    <div class="screen-bg"></div>
+    <div class="screen-shade"></div>
+    <div class="bind-header">
+      <button class="back-btn" data-action="bind-back">‹</button>
+      <div class="bind-title">绑定手机号</div>
+    </div>
+    <div class="news-banner">
+      <span class="tag">🎉 喜报</span>
+      <div class="marquee"><div class="marquee-track" id="bind-news"></div></div>
+    </div>
+    <div class="bind-form">
+      <div class="bind-card">
+        <div class="bind-row">
+          <div class="field"><span class="field-prefix">📱</span><input id="bind-phone" type="tel" maxlength="11" placeholder="请输入手机号"></div>
+          <div class="field"><span class="field-prefix">🔑</span><input id="bind-code" type="text" maxlength="6" placeholder="验证码"><button class="code-btn" id="code-btn" data-action="send-code">28s</button></div>
+        </div>
+        <div class="bind-row">
+          <div class="field"><span class="field-prefix">🎲</span><input id="bind-nick" type="text" maxlength="16" placeholder="设置昵称"><button class="dice-btn" data-action="random-nick">🎲</button></div>
+          <div class="field"><span class="field-prefix">🔒</span><input id="bind-pwd" type="password" maxlength="20" placeholder="设置登录密码"><button class="eye-btn" data-eye="bind-pwd">👁</button></div>
+        </div>
+        <button class="btn btn-gold btn-lg bind-submit" data-action="bind-submit">确认绑定</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ==================== 图8 游戏主首页 ==================== -->
+  <section class="screen" id="screen-home">
+    <div class="screen-bg"></div>
+    <div class="screen-shade strong"></div>
+    <div class="lobby-flow"></div>
+    <div class="home-top">
+      <div class="top-row">
+        <div class="home-logo">728<small>POKER</small></div>
+        <div class="jackpot-banner">
+          <span class="tag"><b>💰</b>全服中奖</span>
+          <div class="marquee"><div class="marquee-track" id="jackpot-news"></div></div>
+        </div>
+        <div class="top-entries">
+          <button class="entry" data-toast="🆘 救济金（每日可领 1000 欢乐豆）"><span class="entry-ring"><span class="ic">🎁</span></span><span class="lb">救济金</span></button>
+          <button class="entry" data-toast="📅 每日签到，连续签到奖励翻倍"><span class="dot">●</span><span class="entry-ring"><span class="ic">📅</span></span><span class="lb">签到</span></button>
+          <button class="entry" data-toast="🎫 月卡特权，海量福利等你来"><span class="entry-ring"><span class="ic">🎫</span></span><span class="lb">月卡</span></button>
+          <button class="entry" data-toast="💡 你提我改，好建议送好礼"><span class="entry-ring"><span class="ic">💡</span></span><span class="lb">你提我改</span></button>
+          <button class="entry" data-toast="🎁 绑定送豆，最高送 20000 欢乐豆" data-action="bind-promo"><span class="entry-ring"><span class="ic">🎀</span></span><span class="lb">绑定送豆</span></button>
+        </div>
+      </div>
+    </div>
+    <div class="home-main">
+      <div class="core-grid">
+        <button class="core-card card-fish" data-action="game-fish">
+          <span class="badge">HOT</span>
+          
+          <span class="card-title t-fish">全民捕鱼</span>
+          <span class="card-sub">万炮齐发 · 疯狂爆金</span>
+        </button>
+        <button class="core-card card-poker" data-action="game-poker">
+          
+          <span class="card-title t-poker">棋牌</span>
+          <span class="card-sub">斗地主 · 炸金花</span>
+        </button>
+        <button class="core-card card-slot" data-action="game-slot">
+          
+          <span class="card-title t-slot">街机777</span>
+          <span class="card-sub">JACKPOT</span>
+        </button>
+      </div>
+      <div class="side-bar">
+        <button class="side-btn hot" data-action="service"><span class="ic">🎧</span><span class="lb">客服</span></button>
+        <button class="side-btn" data-action="rank"><span class="ic">🏆</span><span class="lb">排行榜</span></button>
+        <button class="side-btn" data-action="bank"><span class="ic">🏦</span><span class="lb">银行</span></button>
+        <button class="side-btn" data-action="community"><span class="ic">💬</span><span class="lb">社群</span></button>
+        <button class="side-btn" data-action="backup"><span class="ic">☁️</span><span class="lb">备份</span></button>
+      </div>
+    </div>
+    <div class="home-bottom">
+      <div class="bottom-left" data-action="profile">
+        <div class="b-avatar">
+          <svg class="avatar" width="46" height="46" viewBox="0 0 46 46">
+            <defs><linearGradient id="avG" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ff2d95"/><stop offset="1" stop-color="#a855f7"/></linearGradient></defs>
+            <circle cx="23" cy="23" r="22" fill="url(#avG)" stroke="#fff" stroke-width="1.5"/>
+            <circle cx="23" cy="19" r="8" fill="#fff" opacity=".95"/>
+            <path d="M8 44 C10 33 15 28 23 28 C31 28 36 33 38 44 Z" fill="#fff" opacity=".95"/>
+          </svg>
+          <span class="lv">Lv.8</span>
+        </div>
+        <div class="b-info">
+          <div class="b-name" id="home-nick">Guest17882***</div>
+          <div class="b-assets">
+            <span class="bean"><svg width="13" height="13" viewBox="0 0 16 16"><ellipse cx="8" cy="8" rx="7" ry="6.2" fill="#ffd24a" stroke="#b45309" stroke-width="1.2"/><path d="M8 2 Q10 8 8 14 M3 6 Q8 8 13 6" stroke="#fff" stroke-width=".9" fill="none" opacity=".85"/></svg><span id="home-beans">0</span><span class="plus">+</span></span>
+            <span class="gem"><svg width="13" height="13" viewBox="0 0 16 16"><path d="M8 1 L14 6 L8 15 L2 6 Z" fill="#7cc7ff" stroke="#1e40af" stroke-width="1.2"/><path d="M2 6 L14 6 L8 1 Z" fill="#cfe9ff" stroke="#1e40af" stroke-width="1"/></svg><span id="home-gems">0</span></span>
+          </div>
+        </div>
+      </div>
+      <div class="bottom-mid"><span class="chat-ic">💬</span><div class="marquee"><div class="marquee-track" id="notice-news"></div></div></div>
+      <button class="recharge" data-action="recharge">
+        <span class="re-ic"><svg viewBox="0 0 32 24" fill="none"><path d="M2 14 Q2 5 16 4 Q30 5 30 14 L27 20 Q24 23 16 23 Q8 23 5 20 Z" fill="url(#ingotG)" stroke="#fff" stroke-width="1.4"/><rect x="6" y="9" width="20" height="4" rx="2" fill="#b45309" opacity=".55"/><text x="16" y="17" font-size="9" font-weight="900" text-anchor="middle" fill="#fff">¥</text><defs><linearGradient id="ingotG" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff3b0"/><stop offset="1" stop-color="#ff9f1c"/></linearGradient></defs></svg></span>
+        <span class="re-txt">充值</span>
+      </button>
+    </div>
+  </section>
+  <!-- ==================== 图3 全部账户弹窗 ==================== -->
+  <div class="modal" id="modal-accounts">
+    <div class="modal-mask" data-close="modal-accounts"></div>
+    <div class="modal-box">
+      <button class="modal-close" data-close="modal-accounts">✕</button>
+      <div class="modal-title">全部账户</div>
+      <div class="accounts-row">
+        <div class="account-card">
+          <svg class="avatar" width="56" height="56" viewBox="0 0 46 46">
+            <circle cx="23" cy="23" r="22" fill="url(#avG)" stroke="#fff" stroke-width="1.5"/>
+            <circle cx="23" cy="19" r="8" fill="#fff" opacity=".95"/>
+            <path d="M8 44 C10 33 15 28 23 28 C31 28 36 33 38 44 Z" fill="#fff" opacity=".95"/>
+          </svg>
+          <div class="acct-name">Guest17882***</div>
+          <div class="acct-id">ID：942819003</div>
+          <span class="acct-tag">【游客用户】</span>
+          <button class="btn btn-sm btn-purple" data-action="account-login">账号登录</button>
+        </div>
+        <button class="add-account" data-action="register">
+          <b>＋</b><span>添加 / 注册<br>新账号</span>
+        </button>
+      </div>
+      <div class="modal-hint">提示：更换设备登录需要进行短信二次验证。</div>
+    </div>
+  </div>
+
+  <!-- ==================== 图4 账号登录弹窗 ==================== -->
+  <div class="modal" id="modal-login">
+    <div class="modal-mask" data-close="modal-login"></div>
+    <div class="modal-box">
+      <button class="modal-close" data-close="modal-login">✕</button>
+      <div class="modal-title" id="login-modal-title">账号登录</div>
+      <div class="field">
+        <span class="field-prefix">🌍</span>
+        <select id="country-code">
+          <option value="+86">+86 中国大陆</option>
+          <option value="+852">+852 中国香港</option>
+          <option value="+853">+853 中国澳门</option>
+          <option value="+886">+886 中国台湾</option>
+          <option value="+1">+1 美国</option>
+          <option value="+60">+60 马来西亚</option>
+          <option value="+65">+65 新加坡</option>
+          <option value="+81">+81 日本</option>
+        </select>
+      </div>
+      <div class="field"><span class="field-prefix">📱</span><input id="login-account" type="text" placeholder="请输入手机号 / 账号"></div>
+      <div class="field"><input id="login-pwd" type="password" placeholder="请输入密码"><button class="eye-btn" data-eye="login-pwd">👁</button></div>
+      <label class="agree"><input type="checkbox" id="agree-box" checked><span>我已阅读并同意 <a>《728游戏服务协议》</a> 和 <a>《隐私政策》</a></span></label>
+      <div class="links"><a data-action="forgot">忘记密码</a><a data-action="register">注册</a></div>
+      <button class="btn btn-gold btn-lg" data-action="login-submit">确认</button>
+    </div>
+  </div>
+
+  <!-- ==================== 图5 游客登录安全提示 ==================== -->
+  <div class="modal" id="modal-warning">
+    <div class="modal-mask" data-close="modal-warning"></div>
+    <div class="modal-box">
+      <button class="modal-close" data-close="modal-warning">✕</button>
+      <div class="warn-head">🛡️ 官方安全提示</div>
+      <div class="warn-body">
+        <b>【防骗防诈公告】</b><br>
+        1. 官方客服绝不会向您索要密码、短信验证码；<br>
+        2. 请勿轻信“代充折扣”“内部渠道”“稳赚包赢”等虚假宣传；<br>
+        3. 任何要求转账、私下交易、点击陌生链接的行为均为诈骗；<br>
+        4. 如遇可疑情况，请立即联系 24 小时在线客服举报。
+      </div>
+      <button class="btn btn-gold btn-lg" data-action="warning-confirm">确认</button>
+    </div>
+  </div>
+
+  <!-- ==================== 图6 绑定送豆引导 ==================== -->
+  <div class="modal" id="modal-bindpromo">
+    <div class="modal-mask" data-close="modal-bindpromo"></div>
+    <div class="modal-box">
+      <button class="modal-close" data-close="modal-bindpromo">✕</button>
+      <div class="gift-wrap">
+        <svg viewBox="0 0 120 120" fill="none">
+          <defs><linearGradient id="giftG" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fff3c4"/><stop offset="1" stop-color="#ffb020"/></linearGradient></defs>
+          <rect x="18" y="34" width="84" height="66" rx="10" fill="url(#giftG)" stroke="#fff" stroke-width="3"/>
+          <rect x="18" y="52" width="84" height="12" fill="#ff2d95" stroke="#fff" stroke-width="2"/>
+          <rect x="52" y="34" width="16" height="66" fill="#ff2d95" stroke="#fff" stroke-width="2"/>
+          <path d="M60 34 C60 14 40 10 34 22 C28 34 46 42 60 40 Z" fill="url(#giftG)" stroke="#fff" stroke-width="3"/>
+          <path d="M60 34 C60 14 80 10 86 22 C92 34 74 42 60 40 Z" fill="url(#giftG)" stroke="#fff" stroke-width="3"/>
+          <text x="60" y="80" fill="#fff" font-size="20" font-weight="900" text-anchor="middle">送豆</text>
+        </svg>
+      </div>
+      <div class="modal-title">绑定送豆</div>
+      <div class="bind-promo-txt">
+        绑定手机 + 累计充值超过 <b>200万豆</b><br>
+        立刻送您 <span class="promo-num">20000 欢乐豆</span> 🎉
+      </div>
+      <button class="btn btn-gold btn-lg" data-action="bind-now">立即绑定</button>
+      <button class="btn btn-ghost btn-lg" style="margin-top:12px" data-action="bind-later">暂不绑定</button>
+    </div>
+  </div>
+
+  <!-- ==================== 客服弹窗 ==================== -->
+  <div class="modal" id="modal-service">
+    <div class="modal-mask" data-close="modal-service"></div>
+    <div class="modal-box">
+      <button class="modal-close" data-close="modal-service">✕</button>
+      <div class="modal-title">24小时在线客服</div>
+      <div class="bind-promo-txt">👩‍💻 客服小姐姐全天在线<br>响应时间 &lt; 2 分钟<br>点击下方按钮立即联系</div>
+      <button class="btn btn-cyan btn-lg" data-action="contact">💬 联系客服</button>
+      <button class="btn btn-ghost btn-lg" style="margin-top:12px" data-close="modal-service">关闭</button>
+    </div>
+  </div>
+
+  <!-- ==================== 二级菜单：个人信息面板 ==================== -->
+  <div class="panel" id="panel-profile">
+    <div class="panel-mask" data-close-panel></div>
+    <div class="panel-sheet">
+      <div class="handle"></div>
+      <div class="profile-head">
+        <svg class="avatar" width="62" height="62" viewBox="0 0 46 46">
+          <circle cx="23" cy="23" r="22" fill="url(#avG)" stroke="#fff" stroke-width="1.5"/>
+          <circle cx="23" cy="19" r="8" fill="#fff" opacity=".95"/>
+          <path d="M8 44 C10 33 15 28 23 28 C31 28 36 33 38 44 Z" fill="#fff" opacity=".95"/>
+        </svg>
+        <div class="profile-info">
+          <div class="profile-name" id="profile-nick">Guest17882*** <span style="font-size:11px;color:#ffd24a;border:1px solid rgba(255,210,74,.5);border-radius:6px;padding:1px 6px">游客</span></div>
+          <div class="profile-id">ID：<span id="profile-id">942819003</span><button class="copy-btn" data-action="copy-id">📋 复制ID</button></div>
+          <div class="profile-phone">📱 绑定手机：<span id="profile-phone">未绑定</span></div>
+        </div>
+      </div>
+      <div class="profile-btns">
+        <button class="btn btn-purple" data-action="settings">⚙️ 设置</button>
+        <button class="btn btn-ghost" data-action="switch-account">🔄 切换账号</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== 三级菜单：设置弹窗 ==================== -->
+  <div class="modal" id="modal-settings">
+    <div class="modal-mask" data-close="modal-settings"></div>
+    <div class="modal-box">
+      <button class="modal-close" data-close="modal-settings">✕</button>
+      <div class="modal-title">设置</div>
+      <div class="settings-list">
+        <div class="vol-row"><span class="v-icon">🎵</span><label>音乐音量</label><input type="range" id="vol-music" min="0" max="100" value="70"><span class="vol-val" id="vol-music-val">70</span></div>
+        <div class="vol-row"><span class="v-icon">🔊</span><label>音效音量</label><input type="range" id="vol-sfx" min="0" max="100" value="80"><span class="vol-val" id="vol-sfx-val">80</span></div>
+        <label class="switch-row"><span class="s-left"><span class="s-icon">🎵</span>音乐</span><span class="switch"><input type="checkbox" id="sw-music" checked><i></i></span></label>
+        <label class="switch-row"><span class="s-left"><span class="s-icon">🔊</span>音效</span><span class="switch"><input type="checkbox" id="sw-sfx" checked><i></i></span></label>
+        <label class="switch-row"><span class="s-left"><span class="s-icon">🔇</span>静音</span><span class="switch"><input type="checkbox" id="sw-mute"><i></i></span></label>
+        <label class="switch-row"><span class="s-left"><span class="s-icon">⚡</span>自动</span><span class="switch"><input type="checkbox" id="sw-auto"><i></i></span></label>
+        <label class="switch-row"><span class="s-left"><span class="s-icon">🌞</span>白天</span><span class="switch"><input type="checkbox" id="sw-day"><i></i></span></label>
+        <label class="switch-row"><span class="s-left"><span class="s-icon">🌙</span>夜间</span><span class="switch"><input type="checkbox" id="sw-night" checked><i></i></span></label>
+      </div>
+      <div class="repair-bar" id="repair-bar"><div class="fill" id="repair-fill"></div></div>
+      <button class="btn btn-ghost btn-lg settings-repair" data-action="repair">🔧 修复（清理缓存 / 修复游戏资源）</button>
+    </div>
+  </div>
+
+  <!-- 声音提示（首次交互开启音效） -->
+  <div id="sound-hint">🔊 点击屏幕开启声音</div>
+
+  <!-- Toast 容器 -->
+  <div id="toast"></div>
+
+</div>
+</div>
+<script>
+/* ==================== 工具 ==================== */
+const $  = s => document.querySelector(s);
+const $$ = s => [...document.querySelectorAll(s)];
+
+/* ==================== 全局状态 ==================== */
+const state = {
+  id: '942819003',
+  nick: 'Guest17882***',
+  phone: '',
+  beans: 0,
+  gems: 0,
+  theme: 'night',
+  sound: { music: true, sfx: true, mute: false, musicVol: 70, sfxVol: 80 }
+};
+
+/* ==================== 高品质音效系统（Web Audio 合成） ==================== */
+const Sound = {
+  ctx: null, master: null, sfxBus: null, musicBus: null,
+  init() {
+    if (this.ctx) return;
+    const AC = window.AudioContext || window.webkitAudioContext;
+    if (!AC) return;
+    this.ctx = new AC();
+    this.master = this.ctx.createGain(); this.master.gain.value = 1; this.master.connect(this.ctx.destination);
+    this.sfxBus = this.ctx.createGain(); this.sfxBus.connect(this.master);
+    this.musicBus = this.ctx.createGain(); this.musicBus.connect(this.master);
+  },
+  resume() { if (this.ctx && this.ctx.state === 'suspended') this.ctx.resume(); },
+  /* 振荡器音符：支持滑音与低通滤波 */
+  tone(bus, freq, dur, type, gain, when = 0, slideTo = 0, filterFreq = 0) {
+    if (!this.ctx) return;
+    const t = this.ctx.currentTime + when;
+    const o = this.ctx.createOscillator(); o.type = type; o.frequency.setValueAtTime(freq, t);
+    if (slideTo > 0) o.frequency.exponentialRampToValueAtTime(slideTo, t + dur);
+    const g = this.ctx.createGain();
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(gain, t + 0.012);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    let node = o;
+    if (filterFreq > 0) { const f = this.ctx.createBiquadFilter(); f.type = 'lowpass'; f.frequency.value = filterFreq; node.connect(f); node = f; }
+    node.connect(g); g.connect(bus || this.master);
+    o.start(t); o.stop(t + dur + 0.06);
+  },
+  /* 白噪声：用于 whoosh / 打击垫 */
+  noise(bus, dur, gain, when = 0, filterFreq = 2000, sweepTo = 0) {
+    if (!this.ctx) return;
+    const t = this.ctx.currentTime + when;
+    const len = Math.max(1, Math.floor(this.ctx.sampleRate * dur));
+    const buf = this.ctx.createBuffer(1, len, this.ctx.sampleRate);
+    const d = buf.getChannelData(0); for (let i = 0; i < len; i++) d[i] = Math.random() * 2 - 1;
+    const src = this.ctx.createBufferSource(); src.buffer = buf;
+    const f = this.ctx.createBiquadFilter(); f.type = 'bandpass'; f.Q.value = 1.1;
+    f.frequency.setValueAtTime(filterFreq, t);
+    if (sweepTo > 0) f.frequency.exponentialRampToValueAtTime(Math.max(40, sweepTo), t + dur);
+    const g = this.ctx.createGain();
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(gain, t + 0.015);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    src.connect(f); f.connect(g); g.connect(bus || this.master);
+    src.start(t); src.stop(t + dur + 0.06);
+  },
+  sfxGain() { return (state.sound.sfx && !state.sound.mute) ? state.sound.sfxVol / 100 : 0; },
+  musicGain() { return (state.sound.music && !state.sound.mute) ? state.sound.musicVol / 100 : 0; },
+  /* ---- 科技感 Bip（按钮点击） ---- */
+  click() {
+    const g = this.sfxGain(); if (!g) return;
+    this.tone(this.sfxBus, 1480, 0.055, 'square', 0.09 * g, 0, 1900);
+    this.tone(this.sfxBus, 2150, 0.05, 'sine', 0.06 * g, 0.016);
+  },
+  /* ---- 柔和 Pop（关闭） ---- */
+  pop() {
+    const g = this.sfxGain(); if (!g) return;
+    this.tone(this.sfxBus, 480, 0.1, 'sine', 0.09 * g, 0, 320);
+    this.tone(this.sfxBus, 720, 0.06, 'sine', 0.05 * g, 0.03, 500);
+  },
+  /* ---- 空间感 Whoosh（弹窗弹出 / 转场） ---- */
+  whoosh() {
+    const g = this.sfxGain(); if (!g) return;
+    this.noise(this.sfxBus, 0.42, 0.17 * g, 0, 800, 2600);
+    this.tone(this.sfxBus, 260, 0.4, 'sine', 0.055 * g, 0, 760);
+  },
+  /* ---- 胜利高音（成功/确认） ---- */
+  success() {
+    const g = this.sfxGain(); if (!g) return;
+    [523.25, 659.25, 783.99, 1046.5].forEach((f, i) => this.tone(this.sfxBus, f, 0.22, 'triangle', 0.11 * g, i * 0.09));
+    this.tone(this.sfxBus, 1318.5, 0.42, 'sine', 0.055 * g, 0.38);
+  },
+  /* ---- 金币闪烁 ---- */
+  coin() {
+    const g = this.sfxGain(); if (!g) return;
+    this.tone(this.sfxBus, 1180, 0.05, 'square', 0.06 * g);
+    this.tone(this.sfxBus, 1760, 0.09, 'square', 0.06 * g, 0.045);
+    this.tone(this.sfxBus, 2350, 0.12, 'sine', 0.05 * g, 0.09);
+  },
+  /* ---- 开关 ---- */
+  toggle() {
+    const g = this.sfxGain(); if (!g) return;
+    this.tone(this.sfxBus, 760, 0.05, 'triangle', 0.08 * g, 0, 920);
+  },
+  /* ---- 错误 ---- */
+  error() {
+    const g = this.sfxGain(); if (!g) return;
+    this.tone(this.sfxBus, 240, 0.12, 'sawtooth', 0.07 * g, 0, 170);
+    this.tone(this.sfxBus, 150, 0.2, 'sawtooth', 0.06 * g, 0.11, 110);
+  },
+  /* ---- 倒计时滴答 ---- */
+  tick() {
+    const g = this.sfxGain(); if (!g) return;
+    this.tone(this.sfxBus, 1100, 0.03, 'square', 0.045 * g);
+  }
+};
+
+/* ==================== 生成式派对电子 BGM ==================== */
+const Music = {
+  timer: null, step: 0, nextT: 0, bpm: 104,
+  chords: [[110, 164.81, 220], [87.31, 130.81, 174.61], [98, 130.81, 196], [98, 146.83, 196]],
+  start() {
+    if (this.timer || !Sound.ctx) return;
+    this.step = 0; this.nextT = Sound.ctx.currentTime + 0.05;
+    this.timer = setInterval(() => this.schedule(), 160);
+  },
+  schedule() {
+    if (!Sound.ctx) return;
+    const spb = 60 / this.bpm, now = Sound.ctx.currentTime;
+    while (this.nextT < now + 0.5) {
+      const t = this.nextT - now;
+      const bar = Math.floor(this.step / 16), i16 = this.step % 16;
+      const ch = this.chords[bar % 4];
+      const g = Sound.musicGain();
+      if (g > 0) {
+        if (i16 % 4 === 0) Sound.tone(Sound.musicBus, ch[0], spb * 1.7, 'sine', 0.15 * g, t);
+        if (i16 === 0) ch.forEach((f, i) => Sound.tone(Sound.musicBus, f * 2, spb * 7.5, 'triangle', 0.032 * g, t + i * 0.02));
+        if (i16 % 2 === 0) {
+          const notes = [ch[1] * 2, ch[2] * 2, ch[2] * 3, ch[1] * 3];
+          Sound.tone(Sound.musicBus, notes[(i16 / 2) % 4], spb * 0.4, 'square', 0.02 * g, t, 0, 2600);
+        }
+        if (i16 % 2 === 1) Sound.noise(Sound.musicBus, 0.035, 0.028 * g, t, 8500);
+        if (i16 === 12 && bar % 4 === 3) Sound.tone(Sound.musicBus, 1567.98, 0.32, 'sine', 0.05 * g, t);
+      }
+      this.nextT += spb / 4; this.step++;
+    }
+  },
+  stop() { clearInterval(this.timer); this.timer = null; }
+};
+
+/* ==================== 屏幕转场（Spring） ==================== */
+function showScreen(id) {
+  const gEl = $('#game'); if (gEl.scrollTop) gEl.scrollTop = 0; if (gEl.scrollLeft) gEl.scrollLeft = 0;
+  if (document.activeElement && document.activeElement.blur) document.activeElement.blur();
+  $$('.screen').forEach(s => s.classList.toggle('active', s.id === id));
+  const t = document.getElementById(id);
+  t.classList.remove('screen-enter');
+  void t.offsetWidth;
+  t.classList.add('screen-enter');
+  playSfx(() => Sound.whoosh());
+}
+
+/* ==================== 弹窗 / 面板 ==================== */
+function openModal(id)  { document.getElementById(id).classList.add('open'); playSfx(() => Sound.whoosh()); }
+function closeModal(id) { document.getElementById(id).classList.remove('open'); Sound.pop(); }
+function openPanel(id)  { document.getElementById(id).classList.add('open'); Sound.whoosh(); }
+function closePanel(id) { document.getElementById(id).classList.remove('open'); Sound.pop(); }
+
+/* ==================== Toast（Spring） ==================== */
+function toast(msg, icon = '✅') {
+  const wrap = $('#toast');
+  const el = document.createElement('div');
+  el.className = 'toast-item';
+  el.innerHTML = icon ? `<span>${icon}</span><span>${msg}</span>` : `<span>${msg}</span>`;
+  wrap.appendChild(el);
+  setTimeout(() => { el.classList.add('out'); setTimeout(() => el.remove(), 320); }, 1900);
+}
+
+/* ==================== 点击涟漪反馈 ==================== */
+document.addEventListener('pointerdown', e => {
+  const btn = e.target.closest('.btn,.entry,.side-btn,.core-card,.recharge,.add-account,.copy-btn,.eye-btn,.dice-btn,.code-btn,.back-btn,.modal-close,.float-btn,.bottom-left');
+  if (!btn) return;
+  const r = btn.getBoundingClientRect();
+  const d = Math.max(r.width, r.height) * 1.2;
+  const span = document.createElement('span');
+  span.className = 'ripple';
+  span.style.width = span.style.height = d + 'px';
+  span.style.left = (e.clientX - r.left - d / 2) + 'px';
+  span.style.top = (e.clientY - r.top - d / 2) + 'px';
+  btn.appendChild(span);
+  setTimeout(() => span.remove(), 680);
+});
+
+/* ==================== 多端自适应缩放 ==================== */
+function fit() {
+  const g0 = $('#game'); if (g0 && g0.scrollTop) g0.scrollTop = 0; if (g0 && g0.scrollLeft) g0.scrollLeft = 0;
+  const w = innerWidth, h = innerHeight;
+  const phone = matchMedia('(pointer: coarse)').matches && w <= h && w < 500;
+  let scale, ty;
+  if (phone) {
+    scale = w / 390;                          // 手机竖屏：宽度铺满屏幕
+    const gh = 844 * scale;
+    ty = gh > h ? (h - gh) : (h - gh) / 2;    // 高度超出时贴底（保住底部充值行），否则居中
+  } else {
+    scale = Math.min(w / 390, h / 844);       // PC/横屏/平板：完整显示居中
+    ty = (h - 844 * scale) / 2;
+  }
+  const g = $('#game');
+  g.style.transform = `translate(${(w - 390 * scale) / 2}px, ${ty}px) scale(${scale})`;
+  g.style.transformOrigin = '0 0';
+}
+addEventListener('resize', fit);
+addEventListener('orientationchange', () => setTimeout(fit, 250));
+if (window.visualViewport) window.visualViewport.addEventListener('resize', () => setTimeout(fit, 60));
+/* ==================== 滚动跑马灯 ==================== */
+function setupMarquee(id, texts, speed = '18s') {
+  const track = document.getElementById(id);
+  if (!track) return;
+  track.style.setProperty('--marquee-speed', speed);
+  track.innerHTML = texts.map(t => `<span>${t}</span>`).join('') + texts.map(t => `<span>${t}</span>`).join('');
+}
+
+/* ==================== 图1 加载与更新页 ==================== */
+function startLoading() {
+  const fill = $('#loading-fill'), pct = $('#loading-pct'),
+        sizeEl = $('#loading-size'), desc = $('#loading-desc');
+  const totalKB = 59.4 * 1024, dur = 3600, t0 = performance.now();
+  (function frame(t) {
+    const p = Math.min(1, (t - t0) / dur);
+    const ep = p < .5 ? 2 * p * p : 1 - Math.pow(-2 * p + 2, 2) / 2;
+    fill.style.width = (ep * 100) + '%';
+    pct.textContent = Math.round(ep * 100) + '%';
+    const kb = ep * totalKB;
+    sizeEl.textContent = kb < 1024 ? kb.toFixed(1) + ' KB / 59.4 MB' : (kb / 1024).toFixed(1) + ' MB / 59.4 MB';
+    if (p < 1) requestAnimationFrame(frame);
+    else {
+      desc.textContent = '更新包下载完成，正在进入游戏…';
+      setTimeout(() => showScreen('screen-login'), 380);
+    }
+  })(t0);
+}
+
+/* ==================== 验证码倒计时 ==================== */
+let codeTimer = null, codeLeft = 0;
+function startCodeCountdown() {
+  const btn = $('#code-btn');
+  codeLeft = 28; btn.disabled = true; btn.textContent = '28s';
+  clearInterval(codeTimer);
+  codeTimer = setInterval(() => {
+    codeLeft--;
+    btn.textContent = codeLeft + 's';
+    Sound.tick();
+    if (codeLeft <= 0) { clearInterval(codeTimer); btn.disabled = false; btn.textContent = '重新获取'; }
+  }, 1000);
+}
+
+/* ==================== 随机昵称 / 复制 ID ==================== */
+function randomNick() {
+  const n = 'Guest' + String(Math.floor(10000000 + Math.random() * 89999999));
+  $('#bind-nick').value = n;
+  Sound.coin();
+}
+function copyID() {
+  const txt = state.id;
+  const ok = () => { toast('ID 复制成功', '📋'); Sound.success(); };
+  const fallback = () => {
+    const ta = document.createElement('textarea');
+    ta.value = txt; document.body.appendChild(ta); ta.select();
+    try { document.execCommand('copy'); ok(); } catch (e) { toast('复制失败，请手动复制', '⚠️'); Sound.error(); }
+    ta.remove();
+  };
+  if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(txt).then(ok).catch(fallback);
+  else fallback();
+}
+
+/* ==================== 流程控制 ==================== */
+function goHome() {
+  const gEl = $('#game'); if (gEl.scrollTop) gEl.scrollTop = 0; if (gEl.scrollLeft) gEl.scrollLeft = 0;
+  if (document.activeElement && document.activeElement.blur) document.activeElement.blur();
+  $('#home-nick').textContent = state.nick;
+  $('#home-beans').textContent = state.beans;
+  $('#home-gems').textContent = state.gems;
+  $('#profile-nick').firstChild.textContent = state.nick + ' ';
+  $('#profile-id').textContent = state.id;
+  $('#profile-phone').textContent = state.phone ? maskPhone(state.phone) : '未绑定';
+  showScreen('screen-home');
+}
+function maskPhone(p) { return p.replace(/^(\d{3})\d{4}(\d{4})$/, '$1****$2'); }
+function goBind() {
+  $('#bind-phone').value = state.phone || '13800138000';
+  $('#bind-nick').value = state.nick;
+  $('#bind-pwd').value = '';
+  $('#bind-code').value = '';
+  startCodeCountdown();
+  showScreen('screen-bind');
+}
+function sendCode() {
+  if (codeLeft > 0) return;
+  const phone = $('#bind-phone').value.trim();
+  if (!/^1\d{10}$/.test(phone)) { toast('请输入正确的手机号', '⚠️'); Sound.error(); return; }
+  startCodeCountdown();
+  toast('验证码已发送，请注意查收', '📩');
+  Sound.toggle();
+}
+function bindSubmit() {
+  const phone = $('#bind-phone').value.trim();
+  const code = $('#bind-code').value.trim();
+  const nick = $('#bind-nick').value.trim();
+  const pwd = $('#bind-pwd').value;
+  if (!/^1\d{10}$/.test(phone)) { toast('请输入正确的手机号', '⚠️'); Sound.error(); return; }
+  if (!code) { toast('请输入验证码', '⚠️'); Sound.error(); return; }
+  if (!nick) { toast('请设置昵称', '⚠️'); Sound.error(); return; }
+  if (pwd.length < 6) { toast('密码至少 6 位', '⚠️'); Sound.error(); return; }
+  state.phone = phone; state.nick = nick;
+  goHome();
+  toast('绑定成功，新手礼包已到账', '🎁');
+  Sound.success();
+}
+function doLogin() {
+  const account = $('#login-account').value.trim();
+  const pwd = $('#login-pwd').value;
+  if (!account) { toast('请输入手机号 / 账号', '⚠️'); Sound.error(); return; }
+  if (!pwd) { toast('请输入密码', '⚠️'); Sound.error(); return; }
+  if (!$('#agree-box').checked) { toast('请先阅读并同意服务协议', '⚠️'); Sound.error(); return; }
+  if (account.includes('@')) { state.nick = account.split('@')[0]; }
+  else if (/^\d{11}$/.test(account)) { state.phone = account; }
+  closeModal('modal-login');
+  toast('登录成功，欢迎回来', '🎉');
+  goHome();
+  Sound.success();
+}
+function doSwitchAccount() {
+  toast('已退出当前账号', '👋');
+  Sound.whoosh();
+  showScreen('screen-login');
+}
+function doRepair() {
+  const bar = $('#repair-bar'), fill = $('#repair-fill');
+  if (bar) bar.style.display = 'block';
+  toast('正在修复游戏资源…', '🔧');
+  Sound.whoosh();
+  let p = 0;
+  const iv = setInterval(() => {
+    p += Math.random() * 24 + 8;
+    if (p >= 100) {
+      p = 100; clearInterval(iv);
+      fill.style.width = '100%';
+      setTimeout(() => {
+        fill.style.width = '0%';
+        if (bar) bar.style.display = 'none';
+        toast('修复完成，缓存已清理', '✅');
+        Sound.success();
+      }, 320);
+    }
+    fill.style.width = p + '%';
+  }, 170);
+}
+
+/* ==================== 主题切换 ==================== */
+function setTheme(t) {
+  state.theme = t;
+  $('#game').classList.toggle('theme-day', t === 'day');
+}
+
+/* ==================== 动作分发 ==================== */
+function handleAction(action) {
+  switch (action) {
+    case 'guest':          openModal('modal-warning'); break;
+    case 'account-login':  $('#login-modal-title').textContent = '账号登录'; openModal('modal-login'); break;
+    case 'all-accounts':   openModal('modal-accounts'); break;
+    case 'register':       $('#login-modal-title').textContent = '注册新账号'; openModal('modal-login'); break;
+    case 'forgot':         toast('请联系 24 小时客服重置密码', '📞'); break;
+    case 'login-submit':   doLogin(); break;
+    case 'warning-confirm': closeModal('modal-warning'); openModal('modal-bindpromo'); break;
+    case 'bind-now':       closeModal('modal-bindpromo'); goBind(); break;
+    case 'bind-later':     closeModal('modal-bindpromo'); goHome(); break;
+    case 'bind-back':      goHome(); break;
+    case 'send-code':      sendCode(); break;
+    case 'random-nick':    randomNick(); break;
+    case 'bind-submit':    bindSubmit(); break;
+    case 'service':        openModal('modal-service'); break;
+    case 'contact':        toast('已连接客服，请稍候…', '💬'); break;
+    case 'repair':         doRepair(); break;
+    case 'game-fish':      toast('全民捕鱼：正在进入渔场…', '🐟'); Sound.coin(); break;
+    case 'game-poker':     toast('棋牌：房间列表开发中…', '🃏'); Sound.coin(); break;
+    case 'game-slot':      toast('街机：JACKPOT 777 即将开启…', '🎰'); Sound.coin(); break;
+    case 'rank':           toast('排行榜开发中…', '🏆'); break;
+    case 'bank':           toast('银行系统开发中…', '🏦'); break;
+    case 'community':      toast('社群功能开发中…', '💬'); break;
+    case 'backup':         toast('云备份功能开发中…', '☁️'); break;
+    case 'recharge':       toast('充值通道开发中…', '💰'); Sound.coin(); break;
+    case 'profile':        openPanel('panel-profile'); break;
+    case 'copy-id':        copyID(); break;
+    case 'settings':       closePanel('panel-profile'); openModal('modal-settings'); break;
+    case 'switch-account': closePanel('panel-profile'); doSwitchAccount(); break;
+    case 'bind-promo':     openModal('modal-bindpromo'); break;
+    default: break;
+  }
+}
+
+/* ==================== 全局交互监听 ==================== */
+document.addEventListener('click', e => {
+  const eye = e.target.closest('[data-eye]');
+  if (eye) {
+    const input = document.getElementById(eye.dataset.eye);
+    const show = input.type === 'password';
+    input.type = show ? 'text' : 'password';
+    eye.classList.toggle('off', !show);
+    Sound.toggle();
+    return;
+  }
+  const act = e.target.closest('[data-action]');
+  if (act) { Sound.click(); handleAction(act.dataset.action); return; }
+  const closer = e.target.closest('[data-close], [data-close-panel]');
+  if (closer) {
+    Sound.pop();
+    const modal = closer.closest('.modal');
+    if (modal) modal.classList.remove('open');
+    const panel = closer.closest('.panel');
+    if (panel) panel.classList.remove('open');
+    return;
+  }
+  const t = e.target.closest('[data-toast]');
+  if (t) { Sound.click(); toast(t.dataset.toast, ''); }
+});
+
+/* ==================== 音频就绪管理（解决移动端首屏无音效） ==================== */
+let audioReady = false;
+const queuedAudio = [];
+function audioTouch() {
+  Sound.init();
+  Sound.resume();
+  if (Sound.ctx && Sound.ctx.state === 'running') {
+    audioReady = true;
+    Music.start();
+    const q = queuedAudio.splice(0);
+    q.forEach(fn => { try { fn(); } catch (e) {} });
+    const hint = $('#sound-hint');
+    if (hint) hint.classList.add('off');
+  }
+}
+function playSfx(fn) {
+  if (audioReady) fn(); else queuedAudio.push(fn);
+}
+['pointerdown', 'touchstart', 'click', 'keydown'].forEach(evt => document.addEventListener(evt, audioTouch));
+
+/* ==================== 设置：开关 ==================== */
+$$('#modal-settings input[type=checkbox]').forEach(cb => {
+  cb.addEventListener('change', () => {
+    Sound.toggle();
+    switch (cb.id) {
+      case 'sw-music': state.sound.music = cb.checked; if (!cb.checked) Music.stop(); else if (!state.sound.mute) Music.start(); break;
+      case 'sw-sfx':   state.sound.sfx = cb.checked; break;
+      case 'sw-mute':  state.sound.mute = cb.checked; if (cb.checked) Music.stop(); else if (state.sound.music) Music.start(); break;
+      case 'sw-day':   if (cb.checked) { $('#sw-night').checked = false; setTheme('day'); } break;
+      case 'sw-night': if (cb.checked) { $('#sw-day').checked = false; setTheme('night'); } break;
+      default: break;
+    }
+  });
+});
+
+/* ==================== 设置：音量滑杆 ==================== */
+$$('#modal-settings input[type=range]').forEach(r => {
+  r.addEventListener('input', () => {
+    const v = +r.value;
+    if (r.id === 'vol-music') {
+      state.sound.musicVol = v; $('#vol-music-val').textContent = v;
+      if (!state.sound.mute && state.sound.music) Music.start();
+    } else {
+      state.sound.sfxVol = v; $('#vol-sfx-val').textContent = v;
+      Sound.toggle();
+    }
+  });
+});
+
+
+/* ==================== 初始化 ==================== */
+function init() {
+  setupMarquee('jackpot-news', [
+    '🎉 恭喜用户【888888】在全民捕鱼中赢得 1,200,000 欢乐豆！',
+    '🎉 恭喜用户【666666】在棋牌·斗地主中赢得 888,000 欢乐豆！',
+    '🎉 恭喜用户【233333】在街机777中爆出 JACKPOT 大满贯！',
+    '🎉 恭喜用户【9527**】在全民捕鱼中赢得 520,000 欢乐豆！',
+    '💰 本期全服大奖池已累计 128,888,888 欢乐豆，等你来拿！'
+  ], '20s');
+  setupMarquee('bind-news', [
+    '🎉 恭喜用户【发财树】成功绑定手机并获得 20000 欢乐豆！',
+    '🎉 恭喜用户【幸运星】连续签到 7 天，获得 5000 欢乐豆！',
+    '🎉 恭喜用户【大赢家】月卡续费成功，获赠 10000 欢乐豆！'
+  ], '14s');
+  setupMarquee('notice-news', [
+    '温馨提示：请妥善保管账号密码，谨防网络诈骗。',
+    '本周活动：每日签到送豆 · 救济金免费领 · 绑定送豆进行中！'
+  ], '12s');
+  fit();
+  startLoading();
+  setTimeout(() => {
+    if (!audioReady) {
+      const hint = $('#sound-hint');
+      if (hint) hint.classList.add('show');
+    }
+  }, 1500);
+}
+init();
+</script>
+</body>
+</html>
