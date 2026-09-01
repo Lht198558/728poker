@@ -756,6 +756,23 @@ input[type=range]::-moz-range-thumb{width:20px;height:20px;border-radius:50%;bac
   #screen-loading .loading-content{padding-bottom:calc(22px + constant(safe-area-inset-bottom))}
 }
 
+
+/* ==================== v15 手机真自适应：填满视口、弹性布局、上下不裁切 ==================== */
+/* 大厅：顶部/底部固定，中间卡片区弹性撑满 */
+#screen-home .home-top{flex:none}
+#screen-home .home-bottom{flex:none}
+#screen-home .home-main{flex:1;min-height:0;display:flex;gap:8px;padding:8px 10px 6px}
+#screen-home .core-grid{flex:1;min-width:0;display:flex;flex-direction:column;gap:10px;padding:0}
+#screen-home .card-fish{flex:0.85 1 0;min-height:0;height:auto;width:100%}
+#screen-home .cards-row2{flex:1.15 1 0;min-height:0;display:flex;gap:10px}
+#screen-home .cards-row2 .core-card{flex:1;min-width:0;height:auto}
+/* 登录页：中部弹性、上下固定，按钮区始终可见 */
+#screen-login .login-mid{flex:1;min-height:0}
+/* 绑定页：内容超高可滚动，永不裁切 */
+#screen-bind .bind-form{overflow-y:auto}
+/* 加载页 */
+#screen-loading .loading-content{flex:none}
+
 </style>
 </head>
 <body>
@@ -1266,18 +1283,20 @@ document.addEventListener('pointerdown', e => {
 function fit() {
   const g0 = $('#game'); if (g0 && g0.scrollTop) g0.scrollTop = 0; if (g0 && g0.scrollLeft) g0.scrollLeft = 0;
   const w = innerWidth, h = innerHeight;
-  const phone = matchMedia('(pointer: coarse)').matches && w <= h && w < 500;
-  let scale, ty;
-  if (phone) {
-    scale = Math.max(w / 390, h / 844);   // 手机竖屏：铺满整屏（cover），左右无黑边
-    ty = (h - 844 * scale) / 2;            // 垂直居中（顶部靠安全距离保护内容）
-  } else {
-    scale = Math.min(w / 390, h / 844);   // PC/横屏/平板：完整显示居中
-    ty = (h - 844 * scale) / 2;
-  }
   const g = $('#game');
-  g.style.transform = `translate(${(w - 390 * scale) / 2}px, ${ty}px) scale(${scale})`;
+  const phone = matchMedia('(pointer: coarse)').matches && w <= h && w < 500;
+  if (phone) {
+    // 手机竖屏：页面直接填满视口（不缩放、不裁切），布局弹性自适应
+    g.style.transform = 'none';
+    g.style.width = w + 'px'; g.style.height = h + 'px';
+  } else {
+    // PC/横屏/平板：竖版等比居中显示
+    const scale = Math.min(w / 390, h / 844);
+    g.style.transform = `translate(${(w - 390 * scale) / 2}px, ${(h - 844 * scale) / 2}px) scale(${scale})`;
+    g.style.width = '390px'; g.style.height = '844px';
+  }
   g.style.transformOrigin = '0 0';
+  g.style.left = '0'; g.style.top = '0';
 }
 addEventListener('resize', fit);
 addEventListener('orientationchange', () => setTimeout(fit, 250));
